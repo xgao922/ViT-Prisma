@@ -3,6 +3,7 @@ from vit_prisma.utils.load_model import load_model
 from vit_prisma.sae.config import VisionModelSAERunnerConfig
 from vit_prisma.sae.sae import StandardSparseAutoencoder, GatedSparseAutoencoder
 from vit_prisma.sae.training.activations_store import VisionActivationsStore, CacheVisionActivationStore
+from vit_prisma.transcoders.transcoder import Transcoder
 
 import wandb
 
@@ -60,6 +61,7 @@ def wandb_log_suffix(cfg: Any, hyperparams: Any):
 class VisionSAETrainer:
     def __init__(self, cfg: VisionModelSAERunnerConfig):
         self.cfg = cfg
+        self.is_transcoder = self.cfg.is_transcoder
 
         self.set_default_attributes()  # For backward compatability
 
@@ -68,13 +70,15 @@ class VisionSAETrainer:
         )
         self.model = load_model(self.cfg, self.cfg.model_name)
 
-        if self.cfg.architecture == "gated":
-            self.sae = GatedSparseAutoencoder(self.cfg)
-        elif self.cfg.architecture == "standard" or self.cfg.architecture == "vanilla":
-            self.sae = StandardSparseAutoencoder(self.cfg)
+        if self.is_transcoder:
+            self.sparse_coder = Transcoder(self.cfg)
         else:
-            raise ValueError(f"Loading of {self.cfg.architecture} not supported")
-
+            if self.cfg.architecture == "gated":
+                self.sparse_coder = GatedSparseAutoencoder(self.cfg)
+            elif self.cfg.architecture == "standard" or self.cfg.architecture == "vanilla":
+                self.sparse_coder = StandardSparseAutoencoder(self.cfg)
+            else:
+                raise ValueError(f"Loading of {self.cfg.architecture} not supported")
 
         dataset, eval_dataset = VisionSAETrainer.load_dataset(self.cfg)
         self.dataset = dataset
@@ -132,7 +136,7 @@ class VisionSAETrainer:
             raise ValueError("Eval dataset is None")
         
 
-        if self.cfg.use_cached_activations:
+        if self.cfg.use_cached_activations and not self.is_transcoder:
             return CacheVisionActivationStore(self.cfg)
 
         return VisionActivationsStore(
@@ -189,20 +193,26 @@ class VisionSAETrainer:
                 from torchvision.datasets.folder import default_loader
                 from torch.utils.data import random_split
 
-                dataset = DatasetFolder(
-                    root=cfg.dataset_path,
+                train_data = DatasetFolder(
+                    root=cfg.dataset_train_path,
                     loader=default_loader,
                     extensions=('.jpg', '.jpeg', '.png'),
                     transform=data_transforms
                 )
 
-                train_size = int(0.8 * len(dataset))
-                print("traning data size : ", train_size)
-                cfg.total_training_images = train_size
+                val_data = DatasetFolder(
+                    root=cfg.dataset_val_path,
+                    loader=default_loader,
+                    extensions=('.jpg', '.jpeg', '.png'),
+                    transform=data_transforms
+                )
+                # train_size = int(0.8 * len(dataset))
+                # print("traning data size : ", train_size)
+                # cfg.total_training_images = train_size
 
-                val_size = len(dataset) - train_size
+                # val_size = len(dataset) - train_size
 
-                train_data, val_data = random_split(dataset, [train_size, val_size])
+                # train_data, val_data = random_split(dataset, [train_size, val_size])
             except:
                 raise ValueError("Invalid dataset")
         
@@ -229,7 +239,7 @@ class VisionSAETrainer:
             int(self.cfg.d_sae), device=self.cfg.device
         )
         n_frac_active_tokens = 0
-        optimizers = Adam(self.sae.parameters(), lr=self.cfg.lr)
+        optimizers = Adam(self.sparse_coder.parameters(), lr=self.cfg.lr)
         scheduler = get_scheduler(
             self.cfg.lr_scheduler_name,
             optimizer=optimizers,
@@ -246,28 +256,36 @@ class VisionSAETrainer:
         )
 
     def initialize_geometric_medians(self):
-        all_layers = self.sae.cfg.hook_point_layer
+        all_layers = self.sparse_coder.cfg.hook_point_layer
         geometric_medians = {}
         if not isinstance(all_layers, list):
             all_layers = [all_layers]
-        hyperparams = self.sae.cfg
+        hyperparams = self.sparse_coder.cfg
         sae_layer_id = all_layers.index(hyperparams.hook_point_layer)
         if hyperparams.b_dec_init_method == "geometric_median":
+
             layer_acts = self.activations_store.storage_buffer.detach()[
                 :, sae_layer_id, :
             ]
+
+            if self.is_transcoder:
+                layer_acts_out = self.activations_store.storage_buffer_out.detach()[
+                    :, sae_layer_id, :
+                ]
+
             if sae_layer_id not in geometric_medians:
                 median = compute_geometric_median(layer_acts, maxiter=200).median
                 geometric_medians[sae_layer_id] = median
-            self.sae.initialize_b_dec_with_precalculated(
-                geometric_medians[sae_layer_id]
+            self.sparse_coder.initialize_b_dec_with_precalculated(
+                geometric_medians[sae_layer_id],
+                compute_geometric_median(layer_acts_out, maxiter=200).median if self.is_transcoder else None
             )
         elif hyperparams.b_dec_init_method == "mean":
             layer_acts = self.activations_store.storage_buffer.detach().cpu()[
                 :, sae_layer_id, :
             ]
-            self.sae.initialize_b_dec_with_mean(layer_acts)
-        self.sae.train()
+            self.sparse_coder.initialize_b_dec_with_mean(layer_acts)
+        self.sparse_coder.train()
         return geometric_medians
 
     def train_step(
@@ -290,8 +308,13 @@ class VisionSAETrainer:
             if isinstance(hyperparams.hook_point_layer, list)
             else [hyperparams.hook_point_layer]
         )
-        layer_id = all_layers.index(hyperparams.hook_point_layer)
-        sae_in = layer_acts[:, layer_id, :]
+
+        if self.is_transcoder:
+            sae_in = layer_acts[:, 0, :]
+            target_activation = layer_acts[:, 1, :]
+        else:
+            layer_id = all_layers.index(hyperparams.hook_point_layer)
+            sae_in = layer_acts[:, layer_id, :]
 
         sparse_autoencoder.train()
         sparse_autoencoder.set_decoder_norm_to_unit_norm()
@@ -322,15 +345,26 @@ class VisionSAETrainer:
         ).bool()
 
         # Forward and Backward Passes
-        (
-            sae_out,
-            feature_acts,
-            loss,
-            mse_loss,
-            l1_loss,
-            ghost_grad_loss,
-            aux_reconstruction_loss,
-        ) = sparse_autoencoder(sae_in, ghost_grad_neuron_mask)
+        if self.is_transcoder:
+            (
+                sae_out,
+                feature_acts,
+                loss,
+                mse_loss,
+                l1_loss,
+                ghost_grad_loss,
+                aux_reconstruction_loss,
+            ) = sparse_autoencoder(sae_in, target_activation, ghost_grad_neuron_mask)
+        else:
+            (
+                sae_out,
+                feature_acts,
+                loss,
+                mse_loss,
+                l1_loss,
+                ghost_grad_loss,
+                aux_reconstruction_loss,
+            ) = sparse_autoencoder(sae_in, ghost_grad_neuron_mask)
 
         with torch.no_grad():
             did_fire = (feature_acts > 0).float().sum(-2) > 0
@@ -352,6 +386,7 @@ class VisionSAETrainer:
                     optimizer,
                     sae_in,
                     sae_out,
+                    target_activation if self.is_transcoder else None,
                     n_forward_passes_since_fired,
                     ghost_grad_neuron_mask,
                     mse_loss,
@@ -592,6 +627,7 @@ class VisionSAETrainer:
         optimizer,
         sae_in,
         sae_out,
+        target_activation,
         n_forward_passes_since_fired,
         ghost_grad_neuron_mask,
         mse_loss,
@@ -603,6 +639,9 @@ class VisionSAETrainer:
         n_training_steps,
         n_training_tokens,
     ):
+        if self.is_transcoder:
+            sae_in = target_activation
+
         current_learning_rate = optimizer.param_groups[0]["lr"]
         per_token_l2_loss = (sae_out - sae_in).pow(2).sum(dim=-1).squeeze()
         total_variance = (sae_in - sae_in.mean(0)).pow(2).sum(-1)
@@ -757,11 +796,12 @@ class VisionSAETrainer:
         self.initialize_geometric_medians()
 
         print("Starting training") if self.cfg.verbose else None
+        arch = 'Transcoder' if self.is_transcoder else 'SAE'
 
         n_training_steps = 0
         n_training_tokens = 0
 
-        pbar = tqdm(total=self.cfg.total_training_tokens, desc="Training SAE", mininterval=20)
+        pbar = tqdm(total=self.cfg.total_training_tokens, desc=f"Training {arch}", mininterval=20)
         while n_training_tokens < self.cfg.total_training_tokens:
             layer_acts = self.activations_store.next_batch()
 
@@ -778,7 +818,7 @@ class VisionSAETrainer:
                 n_forward_passes_since_fired,
                 n_frac_active_tokens,
             ) = self.train_step(
-                sparse_autoencoder=self.sae,
+                sparse_autoencoder=self.sparse_coder,
                 optimizer=optimizer,
                 scheduler=scheduler,
                 layer_acts=layer_acts,
@@ -803,7 +843,7 @@ class VisionSAETrainer:
             ):
                 # Save checkpoint and remove the threshold from the list
                 self.checkpoint(
-                    self.sae, n_training_tokens, act_freq_scores, n_frac_active_tokens
+                    self.sparse_coder, n_training_tokens, act_freq_scores, n_frac_active_tokens
                 )
 
                 if self.cfg.verbose:
@@ -817,13 +857,13 @@ class VisionSAETrainer:
                 l1_loss = torch.tensor(0.0)
 
             pbar.set_description(
-                f"Training SAE: Loss: {loss.item():.4f}, MSE Loss: {mse_loss.item():.4f}, L1 Loss: {l1_loss.item():.4f}, L0: {l0:.4f}", refresh=False
+                f"Training {arch}: Loss: {loss.item():.4f}, MSE Loss: {mse_loss.item():.4f}, L1 Loss: {l1_loss.item():.4f}, L0: {l0:.4f}", refresh=False
             )
 
         # Final checkpoint
         if self.cfg.n_checkpoints:
             self.checkpoint(
-                self.sae, n_training_tokens, act_freq_scores, n_frac_active_tokens
+                self.sparse_coder, n_training_tokens, act_freq_scores, n_frac_active_tokens
             )
 
         if self.cfg.verbose:
@@ -831,4 +871,4 @@ class VisionSAETrainer:
 
         pbar.close()
 
-        return self.sae
+        return self.sparse_coder
