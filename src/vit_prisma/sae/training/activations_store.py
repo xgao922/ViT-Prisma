@@ -153,25 +153,37 @@ class CacheVisionActivationStore:
 
 
 
+import os
+from typing import Any, Iterator, cast
+
+import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from vit_prisma.models.base_vit import HookedViT
+from functools import lru_cache
+
+
+def collate_fn(data):
+    imgs = [d[0] for d in data]
+    return torch.stack(imgs, dim=0)
+
+
+def collate_fn_eval(data):
+    imgs = [d[0] for d in data]
+    return torch.stack(imgs, dim=0), torch.tensor([d[1] for d in data])
+
+
 class VisionActivationsStore:
     """
     Class for streaming tokens and generating and storing activations
     while training SAEs.
     """
 
-    def __init__(
-        self,
-        cfg: Any,
-        model: HookedViT,
-        dataset,
-        create_dataloader: bool = True,
-        eval_dataset=None,
-        num_workers=0,
-    ):
+    def __init__(self, cfg, model, dataset, create_dataloader=True, eval_dataset=None, num_workers=0):
         self.cfg = cfg
         self.model = model.to(cfg.device)
         self.dataset = dataset
-
+        
         # Main dataset loader
         self.image_dataloader = DataLoader(
             self.dataset,
@@ -181,30 +193,34 @@ class VisionActivationsStore:
             collate_fn=collate_fn,
             drop_last=True,
         )
-
+        
         # Evaluation dataset loader
-        self.image_dataloader_eval = DataLoader(
-            eval_dataset,
-            shuffle=True,
-            num_workers=num_workers,
-            batch_size=self.cfg.store_batch_size,
-            collate_fn=collate_fn_eval,
-            drop_last=True,
-        )
-
-        # Infinite iterators for training and eval data
+        if eval_dataset is not None:
+            self.image_dataloader_eval = DataLoader(
+                eval_dataset,
+                shuffle=True,
+                num_workers=num_workers,
+                batch_size=self.cfg.store_batch_size,
+                collate_fn=collate_fn_eval,
+                drop_last=True,
+            )
+            self.image_dataloader_eval_iter = self._eval_batch_stream(
+                self.image_dataloader_eval, device=self.cfg.device
+            )
+        
+        # Infinite iterator for training data
         self.image_dataloader_iter = self._batch_stream(
             self.image_dataloader, device=self.cfg.device
         )
-        self.image_dataloader_eval_iter = self._eval_batch_stream(
-            self.image_dataloader_eval, device=self.cfg.device
-        )
-
-        # Initialize buffer and main dataloader if requested
+    
+        # Initialize storage buffers
         if create_dataloader:
-            # Fill the storage buffer with half the desired number of batches
-            half_batches = self.cfg.n_batches_in_buffer // 2
-            self.storage_buffer = self.get_buffer(half_batches)
+            if self.cfg.is_transcoder:
+                half_batches = self.cfg.n_batches_in_buffer // 2
+                self.storage_buffer, self.storage_buffer_out = self.get_buffer(half_batches)
+            else:
+                self.storage_buffer = self.get_buffer(self.cfg.n_batches_in_buffer)
+            
             self.dataloader = self.get_data_loader()
 
     def _batch_stream(
@@ -234,74 +250,116 @@ class VisionActivationsStore:
 
     @torch.no_grad
     def get_activations(self, batch_tokens: torch.Tensor) -> torch.Tensor:
-        """
-        Returns layerwise activations from the HookedViT model according to config.
-
-        Shapes:
-            - If cls_token and head_index: (batch, 1, num_layers, head_dim)
-            - If cls_token only: (batch, 1, num_layers, d_model)
-            - If head_index only: (batch, seq_len, num_layers, head_dim)
-            - If neither: (batch, seq_len, num_layers, d_model)
-        """
-        layers = (
-            self.cfg.hook_point_layer
-            if isinstance(self.cfg.hook_point_layer, list)
-            else [self.cfg.hook_point_layer]
-        )
+        """Returns activations from the model, handling transcoder case if configured."""
+        layers = self.cfg.hook_point_layer if isinstance(self.cfg.hook_point_layer, list) else [self.cfg.hook_point_layer]
         act_names = [self.cfg.hook_point.format(layer=layer) for layer in layers]
-        stop_layer = max(layers) + 1
+        
+        # For transcoder, also get output hook points
+        if self.cfg.is_transcoder:
+            out_layers = self.cfg.out_hook_point_layer if isinstance(self.cfg.out_hook_point_layer, list) else [self.cfg.out_hook_point_layer]
+            out_act_names = [self.cfg.out_hook_point.format(layer=layer) for layer in out_layers]
+            all_act_names = act_names + out_act_names
+            stop_layer = max(max(layers), max(out_layers)) + 1
+        else:
+            all_act_names = act_names
+            stop_layer = max(layers) + 1
 
         # Run model and get cached activations
         _, layerwise_activations = self.model.run_with_cache(
-            batch_tokens, names_filter=act_names, stop_at_layer=stop_layer
+            batch_tokens, names_filter=all_act_names, stop_at_layer=stop_layer
         )
 
+        # Process input activations
         activations_list = []
         for act_name in act_names:
             acts = layerwise_activations[act_name]
-
-            # Select heads if specified
             if self.cfg.hook_point_head_index is not None:
                 acts = acts[:, :, self.cfg.hook_point_head_index]
-
-            # Select only CLS token if specified
             if self.cfg.cls_token_only:
                 acts = acts[:, 0:1]
-
             activations_list.append(acts)
-
-        return torch.stack(activations_list, dim=2)
+        in_activations = torch.stack(activations_list, dim=2)
+        
+        # For transcoder, also process output activations
+        if self.cfg.is_transcoder:
+            out_activations_list = []
+            for act_name in out_act_names:
+                acts = layerwise_activations[act_name]
+                if self.cfg.hook_point_head_index is not None:
+                    acts = acts[:, :, self.cfg.hook_point_head_index]
+                if self.cfg.cls_token_only:
+                    acts = acts[:, 0:1]
+                out_activations_list.append(acts)
+            out_activations = torch.stack(out_activations_list, dim=2)
+            return (in_activations, out_activations)
+        
+        return in_activations
 
     def get_buffer(self, n_batches_in_buffer: int) -> torch.Tensor:
         """
-        Creates and returns a buffer of activations by either:
-            - Loading from cached activations if `use_cached_activations` is True
-            - Or generating them from the model if not cached.
-
-        Returns a tensor of shape (total_size * context_size, num_layers, d_in) if cached,
-        or (total_size, context_size, num_layers, d_in) reshaped and shuffled otherwise.
+        Creates and returns a buffer of activations, handling transcoder case.
         """
         context_size = self.cfg.context_size
         batch_size = self.cfg.store_batch_size
         d_in = self.cfg.d_in
         total_size = batch_size * n_batches_in_buffer
 
-        num_layers = (
-            len(self.cfg.hook_point_layer)
-            if isinstance(self.cfg.hook_point_layer, list)
-            else 1
-        )
-
-        # If using cached activations
-        if self.cfg.use_cached_activations:
-            return self._load_cached_activations(
-                total_size, context_size, num_layers, d_in
+        num_layers = len(self.cfg.hook_point_layer) if isinstance(self.cfg.hook_point_layer, list) else 1
+        
+        if self.cfg.is_transcoder:
+            d_out = self.cfg.d_out
+            num_out_layers = len(self.cfg.out_hook_point_layer) if isinstance(self.cfg.out_hook_point_layer, list) else 1
+            
+            # Initialize output buffer for transcoder
+            new_buffer_out = torch.zeros(
+                (total_size, context_size, num_out_layers, d_out),
+                dtype=self.cfg.dtype,
+                device=self.cfg.device,
             )
+        
+        # If using cached activations (note: transcoder not supported with cached activations)
+        if self.cfg.use_cached_activations:
+            assert not self.cfg.is_transcoder, "Transcoder not supported with cached activations"
+            return self._load_cached_activations(total_size, context_size, num_layers, d_in)
 
-        # Otherwise, generate activations from the model
-        return self._generate_activations_buffer(
-            n_batches_in_buffer, batch_size, context_size, num_layers, d_in
+        # Generate activations buffer
+        new_buffer = torch.zeros(
+            (total_size, context_size, num_layers, d_in),
+            dtype=self.cfg.dtype,
+            device=self.cfg.device,
         )
+
+        for start_idx in range(0, total_size, batch_size):
+            batch_tokens = next(self.image_dataloader_iter)
+            
+            if not self.cfg.is_transcoder:
+                batch_activations = self.get_activations(batch_tokens)
+            else:
+                batch_activations_in, batch_activations_out = self.get_activations(batch_tokens)
+                batch_activations = batch_activations_in
+
+            if self.cfg.use_patches_only:
+                # Remove the CLS token if we only need patches
+                batch_activations = batch_activations[:, 1:, :, :]
+                
+            new_buffer[start_idx : start_idx + batch_size, ...] = batch_activations
+            
+            if self.cfg.is_transcoder:
+                if self.cfg.use_patches_only:
+                    batch_activations_out = batch_activations_out[:, 1:, :, :]
+                new_buffer_out[start_idx : start_idx + batch_size, ...] = batch_activations_out
+
+        # Reshape and shuffle
+        new_buffer = new_buffer.reshape(-1, num_layers, d_in)
+        randperm = torch.randperm(new_buffer.shape[0])
+        new_buffer = new_buffer[randperm]
+        
+        if self.cfg.is_transcoder:
+            new_buffer_out = new_buffer_out.reshape(-1, num_out_layers, d_out)
+            new_buffer_out = new_buffer_out[randperm]
+            return new_buffer, new_buffer_out
+        
+        return new_buffer
 
     # @lru_cache(maxsize=2)
     def load_file_cached(self, file):
@@ -385,37 +443,52 @@ class VisionActivationsStore:
         return new_buffer
 
     def get_data_loader(self) -> Iterator[Any]:
-        """
-        Create a new DataLoader from a mixed buffer of half "stored" and half "new" activations.
-        This ensures variety and mixing each time the DataLoader is refreshed.
-
-        Steps:
-            1. Create a mixing buffer by combining newly generated buffer and existing storage buffer.
-            2. Shuffle and split the mixed buffer: half goes back to storage, half is used to form a DataLoader.
-            3. Return an iterator from the new DataLoader.
-        """
+        """Create a new DataLoader handling transcoder case."""
         batch_size = self.cfg.train_batch_size
         half_batches = self.cfg.n_batches_in_buffer // 2
 
-        # Mix current storage buffer with new buffer
-        mixing_buffer = torch.cat(
-            [self.get_buffer(half_batches), self.storage_buffer], dim=0
-        )
-        mixing_buffer = mixing_buffer[torch.randperm(mixing_buffer.shape[0])]
-
-        # Half of the mixed buffer is stored again
-        self.storage_buffer = mixing_buffer[: mixing_buffer.shape[0] // 2]
-
-        # The other half is used as the new training DataLoader
-        data_for_loader = mixing_buffer[mixing_buffer.shape[0] // 2 :]
-
-        dataloader = iter(
-            DataLoader(
+        if self.cfg.is_transcoder:
+            # Get new buffers
+            new_buffer, new_buffer_out = self.get_buffer(half_batches)
+            
+            # Mix with storage buffers
+            mixing_buffer = torch.cat([new_buffer, self.storage_buffer], dim=0)
+            mixing_buffer_out = torch.cat([new_buffer_out, self.storage_buffer_out], dim=0)
+            
+            # Shuffle consistently
+            assert mixing_buffer.shape[0] == mixing_buffer_out.shape[0]
+            randperm = torch.randperm(mixing_buffer.shape[0])
+            mixing_buffer = mixing_buffer[randperm]
+            mixing_buffer_out = mixing_buffer_out[randperm]
+            
+            # Store half for next time
+            self.storage_buffer = mixing_buffer[:mixing_buffer.shape[0]//2]
+            self.storage_buffer_out = mixing_buffer_out[:mixing_buffer_out.shape[0]//2]
+            
+            # Concatenate buffers for training
+            catted_buffers = torch.cat([
+                mixing_buffer[mixing_buffer.shape[0]//2:],
+                mixing_buffer_out[mixing_buffer.shape[0]//2:]
+            ], dim=1)
+            
+            dataloader = iter(DataLoader(
+                cast(Any, catted_buffers),
+                batch_size=batch_size,
+                shuffle=True,
+            ))
+        else:
+            # Regular (non-transcoder) logic
+            mixing_buffer = torch.cat([self.get_buffer(half_batches), self.storage_buffer], dim=0)
+            mixing_buffer = mixing_buffer[torch.randperm(mixing_buffer.shape[0])]
+            self.storage_buffer = mixing_buffer[:mixing_buffer.shape[0]//2]
+            data_for_loader = mixing_buffer[mixing_buffer.shape[0]//2:]
+            
+            dataloader = iter(DataLoader(
                 cast(Any, data_for_loader),
                 batch_size=batch_size,
                 shuffle=True,
-            )
-        )
+            ))
+        
         return dataloader
 
     def next_batch(self) -> torch.Tensor:

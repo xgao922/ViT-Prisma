@@ -58,11 +58,11 @@ class VisionModelSAERunnerConfig:
 
     # Data Generating Function (Model + Training Distibuion)
     model_class_name: str = "HookedViT"
-    model_name: str = "wkcn/TinyCLIP-ViT-40M-32-Text-19M-LAION400M"
+    model_name: str = "open-clip:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K"
     vit_model_cfg: Optional[HookedViTConfig] = None
     model_path: str = None
     hook_point_layer: int = 9
-    layer_subtype: str = "hook_resid_post"
+    layer_subtype: str = "ln2.hook_normalized"
     hook_point_head_index: Optional[int] = None
     context_size: int = 50
     use_cached_activations: bool = False
@@ -71,27 +71,34 @@ class VisionModelSAERunnerConfig:
         None  # Defaults to "activations/{dataset}/{model}/{full_hook_name}_{hook_point_head_index}"
     )
     image_size: int = 224
-    architecture: Literal["standard", "gated", "jumprelu"] = "gated"
+    architecture: Literal["standard", "gated", "jumprelu"] = "standard"
 
     # SAE Parameters
     b_dec_init_method: str = "geometric_median"
     expansion_factor: int = 16
     from_pretrained_path: Optional[str] = None
 
+    # Transcoder Parameters
+    is_transcoder: bool = True
+    transcoder_with_skip_connection: bool = True
+    out_hook_point_layer: int = 9
+    layer_out_subtype: str = "hook_mlp_out"
+    d_out: int = 768
+
     # Misc
-    _device: str = "cpu"
+    _device: str = "cuda"
     seed: int = 42
     _dtype: str = "float32"
 
     # SAE Parameters
-    d_in: int = 512
-    activation_fn_str: str = "relu"  # relu or topk
-    activation_fn_kwargs: dict[str, Any] = field(default_factory=dict)
+    d_in: int = 768
+    activation_fn_str: str = "topk"  # relu or topk
+    activation_fn_kwargs: dict = field(default_factory=dict)
     cls_token_only: bool = False  # use only CLS token in training
 
     # New changes
     max_grad_norm: float = 1.0  # For gradient clipping, set to None to turn off
-    initialization_method: str = "encoder_transpose_decoder"  # or independent
+    initialization_method: str = "independent" #"encoder_transpose_decoder"  # or independent
     normalize_activations: str = "layer_norm"
 
     #####################
@@ -106,7 +113,7 @@ class VisionModelSAERunnerConfig:
     num_workers: int = 16
 
     # Training length parameters
-    num_epochs: int = 10
+    num_epochs: int = 1
 
     # Logging
     verbose: bool = False
@@ -127,7 +134,7 @@ class VisionModelSAERunnerConfig:
     min_explained_variance = None
 
     # Imagenet1k
-    dataset_name: str = "imagenet1k"
+    dataset_name: str = "imgnet"
     dataset_path: str = "/network/scratch/s/sonia.joseph/datasets/kaggle_datasets"
     dataset_train_path: str = (
         "/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/train"
@@ -150,10 +157,10 @@ class VisionModelSAERunnerConfig:
     wandb_log_frequency: int = 10
 
     # Misc
-    n_validation_runs: int = 100  # spaced linearly throughout training
+    n_validation_runs: int = 0  # spaced linearly throughout training
     n_checkpoints: int = 10
     checkpoint_path: str = (
-        "/network/scratch/s/sonia.joseph/sae_checkpoints/tinyclip_40M_mlp_out"
+        "/network/scratch/p/praneet.suresh/open_clip_celeba_checkpoints/"
     )
 
 
@@ -183,6 +190,11 @@ class VisionModelSAERunnerConfig:
     def hook_point(self):
         """Returns the hook point identifier string for a specific layer."""
         return f"blocks.{self.hook_point_layer}.{self.layer_subtype}"
+    
+    @property
+    def out_hook_point(self):
+        """Returns the hook point identifier string for a specific layer."""
+        return f"blocks.{self.out_hook_point_layer}.{self.layer_out_subtype}"
 
     @property
     def tokens_per_buffer(self):
@@ -216,12 +228,12 @@ class VisionModelSAERunnerConfig:
     @property
     def total_training_images(self):
         """Returns the total number of training images based on dataset and epochs."""
-        if self.dataset_name == "imagenet1k":
-            dataset_size = 1_300_000
-        else:
-            raise ValueError(
-                "Your current dataset is not supported by the VisionModelSAERunnerConfig"
-            )
+        # if self.dataset_name == "imagenet1k":
+        dataset_size = 1_300_000
+        # else:
+        #     raise ValueError(
+        #         "Your current dataset is not supported by the VisionModelSAERunnerConfig"
+        #     )
         return int(dataset_size * self.num_epochs)
 
     @property
