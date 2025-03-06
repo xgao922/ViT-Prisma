@@ -523,7 +523,10 @@ class SparseAutoencoder(HookedRootModule, ABC):
                     setattr(loaded_cfg, key, value)
 
         # Instantiate the appropriate subclass based on architecture
-        if loaded_cfg.architecture == "standard":
+        if loaded_cfg.is_transcoder:
+            from vit_prisma.transcoders.transcoder import Transcoder
+            model_cls = Transcoder
+        elif loaded_cfg.architecture == "standard":
             model_cls = StandardSparseAutoencoder
         elif loaded_cfg.architecture == "gated":
             model_cls = GatedSparseAutoencoder
