@@ -180,9 +180,13 @@ class SparseAutoencoder(HookedRootModule, ABC):
         return mse_loss_ghost_resid
 
     @torch.no_grad()
-    def initialize_b_dec_with_precalculated(self, origin: torch.Tensor):
+    def initialize_b_dec_with_precalculated(self, origin: torch.Tensor, transcoder_dec_b: torch.Tensor = None):
         out = origin.clone().detach().to(dtype=self.dtype, device=self.device)
         self.b_dec.data = out
+
+        if transcoder_dec_b is not None:
+            transcoder_dec_b = transcoder_dec_b.clone().detach().to(dtype=self.dtype, device=self.device)
+            self.b_dec_out.data = transcoder_dec_b
 
     @torch.no_grad()
     def initialize_b_dec(self, all_activations: torch.Tensor):
@@ -519,7 +523,10 @@ class SparseAutoencoder(HookedRootModule, ABC):
                     setattr(loaded_cfg, key, value)
 
         # Instantiate the appropriate subclass based on architecture
-        if loaded_cfg.architecture == "standard":
+        if loaded_cfg.is_transcoder:
+            from vit_prisma.transcoders.transcoder import Transcoder
+            model_cls = Transcoder
+        elif loaded_cfg.architecture == "standard":
             model_cls = StandardSparseAutoencoder
         elif loaded_cfg.architecture == "gated":
             model_cls = GatedSparseAutoencoder
@@ -866,7 +873,7 @@ def get_activation_fn(
         return tanh_relu
     elif activation_fn == "topk":
         assert "k" in kwargs, "TopK activation function requires a k value."
-        k = kwargs.get("k", 1)  # Default k to 1 if not provided
+        k = kwargs.get("k", 64)  # Default k to 1 if not provided
         postact_fn = kwargs.get(
             "postact_fn", nn.ReLU()
         )  # Default post-activation to ReLU if not provided
