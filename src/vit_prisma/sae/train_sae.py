@@ -162,57 +162,45 @@ class VisionSAETrainer:
                 if cfg.verbose
                 else None
             )
-            # Imagenet-specific logic
-            from vit_prisma.utils.data_utils.imagenet.imagenet_utils import (
-                setup_imagenet_paths,
-            )
-            from vit_prisma.dataloaders.imagenet_dataset import (
-                ImageNetValidationDataset,
-            )
+                
+            from torchvision.datasets import DatasetFolder
+            from torchvision.datasets.folder import default_loader
+            from torch.utils.data import random_split
 
-            imagenet_paths = setup_imagenet_paths(cfg.dataset_path)
-
-            train_data = torchvision.datasets.ImageFolder(
-                cfg.dataset_train_path, transform=data_transforms
+            train_data = DatasetFolder(
+                root=cfg.dataset_train_path,
+                loader=default_loader,
+                extensions=('.jpg', '.jpeg', '.png'),
+                transform=data_transforms
             )
 
-            val_data = ImageNetValidationDataset(
-                cfg.dataset_val_path,
-                imagenet_paths["label_strings"],
-                imagenet_paths["val_labels"],
-                data_transforms,
+            val_data = DatasetFolder(
+                root=cfg.dataset_val_path,
+                loader=default_loader,
+                extensions=('.jpg', '.jpeg', '.png'),
+                transform=data_transforms
             )
-
+    
         elif cfg.dataset_name == "cifar10":
             train_data, val_data, test_data = load_cifar_10(
                 cfg.dataset_path, image_size=cfg.image_size
             )
         else:
             try:
-                from torchvision.datasets import DatasetFolder
-                from torchvision.datasets.folder import default_loader
-                from torch.utils.data import random_split
-
-                train_data = DatasetFolder(
-                    root=cfg.dataset_train_path,
+                dataset = DatasetFolder(
+                    root=cfg.dataset_path,
                     loader=default_loader,
                     extensions=('.jpg', '.jpeg', '.png'),
                     transform=data_transforms
                 )
+                
+                train_size = int(0.8 * len(dataset))
+                print("traning data size : ", train_size)
+                cfg.total_training_images = train_size
 
-                val_data = DatasetFolder(
-                    root=cfg.dataset_val_path,
-                    loader=default_loader,
-                    extensions=('.jpg', '.jpeg', '.png'),
-                    transform=data_transforms
-                )
-                # train_size = int(0.8 * len(dataset))
-                # print("traning data size : ", train_size)
-                # cfg.total_training_images = train_size
+                val_size = len(dataset) - train_size
 
-                # val_size = len(dataset) - train_size
-
-                # train_data, val_data = random_split(dataset, [train_size, val_size])
+                train_data, val_data = random_split(dataset, [train_size, val_size])
             except:
                 raise ValueError("Invalid dataset")
         
