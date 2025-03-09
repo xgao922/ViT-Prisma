@@ -79,7 +79,7 @@ class VisionModelSAERunnerConfig:
     from_pretrained_path: Optional[str] = None
 
     # Transcoder Parameters
-    is_transcoder: bool = True
+    is_transcoder: bool = False
     transcoder_with_skip_connection: bool = True
     out_hook_point_layer: int = 9
     layer_out_subtype: str = "hook_mlp_out"
@@ -190,6 +190,11 @@ class VisionModelSAERunnerConfig:
     def hook_point(self):
         """Returns the hook point identifier string for a specific layer."""
         return f"blocks.{self.hook_point_layer}.{self.layer_subtype}"
+
+    @hook_point.setter
+    def hook_point(self, value):
+        # Store the custom hook point
+        self._custom_hook_point = value
     
     @property
     def out_hook_point(self):
