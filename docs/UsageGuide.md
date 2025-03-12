@@ -37,7 +37,16 @@ config = HookedViTConfig()
 model = HookedViT(config)
 ```
 
-### Using pretrained models
+### Using pretrained model
+
+```python
+import vit_prisma
+model_name = "open-clip:timm/vit_base_patch32_clip_224.laion2b_e16"
+hooked_clip = vit_prisma.load_hooked_model(model_name)
+transform = vit_prisma.get_model_transforms(model_name)
+```
+
+### Using pretrained models (Legacy)
 
 ```python
 from vit_prisma.models.pretrained_model import PretrainedModel
