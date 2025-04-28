@@ -1,3 +1,7 @@
+# Note
+
+Notice: this library is under major development. Version 2 is coming soon! For a preview, please see our ```dev``` branch.
+
 # Vision Transformer (ViT) Prisma Library
 <div style="display: flex; align-items: center;">
   <img src="assets/images/house.jpg" alt="Logo Image 1" width="200" style="margin-right: 10px;"/>
