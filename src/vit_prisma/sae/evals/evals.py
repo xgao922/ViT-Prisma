@@ -46,6 +46,42 @@ import torch.nn.functional as F
 # import partial
 from functools import partial
 
+
+class IndexedDataset(torch.utils.data.Dataset):
+    """Wrapper dataset that adds indices to the data."""
+    
+    def __init__(self, dataset):
+        """
+        Args:
+            dataset: The dataset to wrap
+        """
+        self.dataset = dataset
+    
+    def __getitem__(self, idx):
+        """
+        Get item with index.
+        
+        Args:
+            idx: The index
+            
+        Returns:
+            data, label, idx
+        """
+        # Get the original data
+        data = self.dataset[idx]
+        
+        # If the dataset returns a tuple, assume first item is data, second is label
+        if isinstance(data, tuple) and len(data) == 2:
+            return data[0], data[1], idx
+        # If it returns something else, just add the index
+        else:
+            return data, idx
+    
+    def __len__(self):
+        """Return the length of the dataset."""
+        return len(self.dataset)
+    
+
 @dataclass
 class EvalConfig(VisionModelSAERunnerConfig):
     sae_path: str = '/network/scratch/s/sonia.joseph/sae_checkpoints/tinyclip_40M_mlp_out/1f89d99e-wkcn-TinyCLIP-ViT-40M-32-Text-19M-LAION400M-expansion-16/n_images_520028.pt'
@@ -66,7 +102,6 @@ class EvalConfig(VisionModelSAERunnerConfig):
 
     samples_per_bin: int = 10 # Number of features to sample per pre-specified interval
     max_images_per_feature: int = 20 # Number of max images to collect per feature
-    
     sampling_type: str = 'avg'
 
 
@@ -130,9 +165,9 @@ def load_model(cfg):
 
 def load_sae(cfg):
     sae_path = cfg.sae_path
-    config_path = os.path.dirname(sae_path) + '/config.json'
-    config = VisionModelSAERunnerConfig.load_config(config_path)
-    sae = SparseAutoencoder.load_from_pretrained(sae_path, config)
+    # config_path = os.path.dirname(sae_path) + '/config.json'
+    # config = VisionModelSAERunnerConfig.load_config(config_path)
+    sae = SparseAutoencoder.load_from_pretrained(sae_path)
     return sae
 
 def save_stats(sae_path, stats):
@@ -406,9 +441,7 @@ def get_feature_probability(feature_acts):
     return (feature_acts.abs() > 0).float().flatten(0, 1)
 
 def calculate_log_frequencies(total_acts, total_tokens):
-    print("Calculating log frequencies...") if cfg.verbose else None
     # print out all shapes
-    print("total_acts shape", total_acts.shape) if cfg.verbose else None
     feature_probs = total_acts / total_tokens
     log_feature_probs = torch.log10(feature_probs)
     return log_feature_probs.cpu().numpy()
@@ -884,17 +917,13 @@ def find_top_activations(
             for i, (values, indices) in top_activations.items()}
 
 
-
-def evaluate(cfg):
-
+def evaluate(cfg, sparse_autoencoder, model, val_data, val_data_visualize):
 
     setup_environment()
-    model = load_model(cfg)
-    sparse_autoencoder = load_sae(cfg)
+
     print("Loaded SAE config", sparse_autoencoder.cfg) if cfg.verbose else None
-    _, val_data = VisionSAETrainer.load_dataset(sparse_autoencoder.cfg)
+    val_data = IndexedDataset(val_data)
     val_dataloader = DataLoader(val_data, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)
-    val_data_visualize = get_imagenet_val_dataset_visualize(cfg)
 
     print("Loaded model and data") if cfg.verbose else None
 
