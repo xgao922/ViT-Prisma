@@ -4,7 +4,6 @@ from . import model_eval
 from . import models
 from . import prisma_tools
 from . import sae
-from . import sample_images
 from . import training
 from . import transforms
 from . import utils
@@ -21,7 +20,6 @@ __all__ = [
     models,
     prisma_tools,
     sae,
-    sample_images,
     training,
     transforms,
     utils,
