@@ -250,6 +250,9 @@ OPEN_CLIP_BASE_CONFIGS = {
         # "eps": 1e-6,
         # "n_classes": 640,
     },
+    "open-clip:laion/CLIP-ViT-g-14-laion2B-s34B-b88K": {
+        **BASE_OPEN_CLIP_CONFIGS["ViT-g"],
+    },
     "open-clip:laion/CLIP-ViT-bigG-14-laion2B-39B-b160k": {
         **BASE_OPEN_CLIP_CONFIGS["ViT-G"],
         # "d_model": 1664,
