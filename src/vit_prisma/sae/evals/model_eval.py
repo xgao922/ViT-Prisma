@@ -114,7 +114,6 @@ class SparsecoderEval():
             batch_label_names = [imagenet_index[str(int(label))][1] for label in range(num_imagenet_classes)]
 
             og_model, _, preproc = open_clip.create_model_and_transforms('hf-hub:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K')
-            og_model = og_model.to('cuda')
             tokenizer = open_clip.get_tokenizer('hf-hub:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K')
 
             text_embeddings = get_text_embeddings_openclip(og_model, preproc, tokenizer, batch_label_names)

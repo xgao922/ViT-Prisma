@@ -45,193 +45,193 @@ dtype_mapping = {
 }
 
 
-@dataclass
-class BaseSAEConfig:
-    def save_config(self, path: str):
-        data = asdict(self)
+# @dataclass
+# class BaseSAEConfig:
+#     def save_config(self, path: str):
+#         data = asdict(self)
 
-        def make_serializable(obj):
-            if inspect.isdatadescriptor(obj):
-                return
-            if isinstance(obj, (list, tuple)):
-                return [make_serializable(item) for item in obj]
-            elif isinstance(obj, dict):
-                return {key: make_serializable(value) for key, value in obj.items()}
-            else:
-                return obj
+#         def make_serializable(obj):
+#             if inspect.isdatadescriptor(obj):
+#                 return
+#             if isinstance(obj, (list, tuple)):
+#                 return [make_serializable(item) for item in obj]
+#             elif isinstance(obj, dict):
+#                 return {key: make_serializable(value) for key, value in obj.items()}
+#             else:
+#                 return obj
 
-        serializable_data = make_serializable(data)
-        if hasattr(self, "_dtype"):
-            serializable_data["_dtype"] = getattr(self, "_dtype")
-        if hasattr(self, "_device"):
-            serializable_data["_device"] = getattr(self, "_device")
+#         serializable_data = make_serializable(data)
+#         if hasattr(self, "_dtype"):
+#             serializable_data["_dtype"] = getattr(self, "_dtype")
+#         if hasattr(self, "_device"):
+#             serializable_data["_device"] = getattr(self, "_device")
 
-        with open(path, "w") as f:
-            json.dump(serializable_data, f, indent=4)
+#         with open(path, "w") as f:
+#             json.dump(serializable_data, f, indent=4)
 
-    @classmethod
-    def load_config(cls, path: str):
-        with open(path, "r") as f:
-            data = json.load(f)
+#     @classmethod
+#     def load_config(cls, path: str):
+#         with open(path, "r") as f:
+#             data = json.load(f)
 
-        def reconstruct_types(obj):
-            if isinstance(obj, dict):
-                return {key: reconstruct_types(value) for key, value in obj.items()}
-            elif isinstance(obj, list):
-                return [reconstruct_types(item) for item in obj]
-            else:
-                return obj
+#         def reconstruct_types(obj):
+#             if isinstance(obj, dict):
+#                 return {key: reconstruct_types(value) for key, value in obj.items()}
+#             elif isinstance(obj, list):
+#                 return [reconstruct_types(item) for item in obj]
+#             else:
+#                 return obj
 
-        data = reconstruct_types(data)
-        current_fields = {f.name for f in fields(cls)}
-        for legacy_key in ["total_training_images", "total_training_tokens", "d_sae"]:
-            data.pop(legacy_key, None)
-        cleaned_data = {k: v for k, v in data.items() if k in current_fields}
-        return cls(**cleaned_data)
+#         data = reconstruct_types(data)
+#         current_fields = {f.name for f in fields(cls)}
+#         for legacy_key in ["total_training_images", "total_training_tokens", "d_sae"]:
+#             data.pop(legacy_key, None)
+#         cleaned_data = {k: v for k, v in data.items() if k in current_fields}
+#         return cls(**cleaned_data)
 
-    def pretty_print(self):
-        print(f"{self.__class__.__name__}:")
-        for field_ in fields(self):
-            value = getattr(self, field_.name)
-            if isinstance(value, torch.dtype):
-                value = str(value).split(".")[-1]
-            elif isinstance(value, torch.device):
-                value = str(value)
-            print(f"  {field_.name}: {value}")
-
-
-@dataclass
-class SAERunnerModelConfig(BaseSAEConfig):
-    model_class_name: str = "HookedViT"
-    model_name: str = "open-clip:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K"
-    vit_model_cfg: Optional[HookedViTConfig] = None
-    model_path: Optional[str] = None
-    hook_point_layer: int = 9
-    layer_subtype: str = "hook_resid_post"
-    hook_point_head_index: Optional[int] = None
-    context_size: int = 50
-    use_cached_activations: bool = False
-    use_patches_only: bool = False
-    cached_activations_path: Optional[str] = None
-    image_size: int = 224
-    architecture: Literal["standard", "gated", "jumprelu"] = "standard"
-
-    b_dec_init_method: str = "geometric_median"
-    expansion_factor: int = 16
-    from_pretrained_path: Optional[str] = None
-    d_in: int = 768
-    activation_fn_str: str = "topk"
-    activation_fn_kwargs: dict = field(default_factory=dict)
-    cls_token_only: bool = False
-    initialization_method: str = "independent"
-    normalize_activations: str = "layer_norm"
-
-    is_transcoder: bool = False
-    transcoder_with_skip_connection: bool = True
-    out_hook_point_layer: int = 9
-    layer_out_subtype: str = "hook_mlp_out"
-    d_out: int = 768
-
-    @property
-    def d_sae(self):
-        return self.d_in * self.expansion_factor
-
-    @property
-    def hook_point(self):
-        return f"blocks.{self.hook_point_layer}.{self.layer_subtype}"
-
-    @property
-    def out_hook_point(self):
-        return f"blocks.{self.out_hook_point_layer}.{self.layer_out_subtype}"
-
-    @property
-    def num_patch(self):
-        return int((self.context_size - 1) ** 0.5)
+#     def pretty_print(self):
+#         print(f"{self.__class__.__name__}:")
+#         for field_ in fields(self):
+#             value = getattr(self, field_.name)
+#             if isinstance(value, torch.dtype):
+#                 value = str(value).split(".")[-1]
+#             elif isinstance(value, torch.device):
+#                 value = str(value)
+#             print(f"  {field_.name}: {value}")
 
 
-@dataclass
-class SAERunnerTrainingConfig(BaseSAEConfig):
-    _device: str = "cuda"
-    _dtype: str = "float32"
-    seed: int = 42
+# @dataclass
+# class SAERunnerModelConfig(BaseSAEConfig):
+#     model_class_name: str = "HookedViT"
+#     model_name: str = "open-clip:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K"
+#     vit_model_cfg: Optional[HookedViTConfig] = None
+#     model_path: Optional[str] = None
+#     hook_point_layer: int = 9
+#     layer_subtype: str = "hook_resid_post"
+#     hook_point_head_index: Optional[int] = None
+#     context_size: int = 50
+#     use_cached_activations: bool = False
+#     use_patches_only: bool = False
+#     cached_activations_path: Optional[str] = None
+#     image_size: int = 224
+#     architecture: Literal["standard", "gated", "jumprelu"] = "standard"
 
-    dataset_name: str = "imagnet"
-    dataset_path: str = "/network/scratch/s/sonia.joseph/datasets/kaggle_datasets"
-    dataset_train_path: str = (
-        "/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/train"
-    )
-    dataset_val_path: str = (
-        "/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/val"
-    )
+#     b_dec_init_method: str = "geometric_median"
+#     expansion_factor: int = 16
+#     from_pretrained_path: Optional[str] = None
+#     d_in: int = 768
+#     activation_fn_str: str = "topk"
+#     activation_fn_kwargs: dict = field(default_factory=dict)
+#     cls_token_only: bool = False
+#     initialization_method: str = "independent"
+#     normalize_activations: str = "layer_norm"
 
-    is_training: bool = True
-    num_epochs: int = 1
-    train_batch_size: int = 1024 * 4
-    max_grad_norm: float = 1.0
+#     is_transcoder: bool = False
+#     transcoder_with_skip_connection: bool = True
+#     out_hook_point_layer: int = 9
+#     layer_out_subtype: str = "hook_mlp_out"
+#     d_out: int = 768
 
-    verbose: bool = False
-    log_to_wandb: bool = True
-    wandb_project: str = "tinyclip_sae_16_hyperparam_sweep_lr"
-    wandb_entity: Optional[str] = None
-    wandb_log_frequency: int = 10
+#     @property
+#     def d_sae(self):
+#         return self.d_in * self.expansion_factor
 
-    lr: float = 0.001
-    l1_coefficient: float = 0.0002
-    lp_norm: float = 1
-    lr_scheduler_name: str = "cosineannealingwarmup"
-    lr_warm_up_steps: int = 500
+#     @property
+#     def hook_point(self):
+#         return f"blocks.{self.hook_point_layer}.{self.layer_subtype}"
 
-    n_validation_runs: int = 0
-    n_checkpoints: int = 10
-    checkpoint_path: str = (
-        "/network/scratch/p/praneet.suresh/open_clip_celeba_checkpoints/"
-    )
+#     @property
+#     def out_hook_point(self):
+#         return f"blocks.{self.out_hook_point_layer}.{self.layer_out_subtype}"
 
-    n_batches_in_buffer: int = 20
-    store_batch_size: int = 32
-    num_workers: int = 16
+#     @property
+#     def num_patch(self):
+#         return int((self.context_size - 1) ** 0.5)
 
-    use_ghost_grads: bool = False
-    feature_sampling_window: int = 1000
-    dead_feature_window: int = 5000
-    dead_feature_threshold: float = 1e-8
 
-    min_l0: Optional[float] = None
-    min_explained_variance: Optional[float] = None
+# @dataclass
+# class SAERunnerTrainingConfig(BaseSAEConfig):
+#     _device: str = "cuda"
+#     _dtype: str = "float32"
+#     seed: int = 42
 
-    @property
-    def device(self):
-        return torch.device(self._device)
+#     dataset_name: str = "imagnet"
+#     dataset_path: str = "/network/scratch/s/sonia.joseph/datasets/kaggle_datasets"
+#     dataset_train_path: str = (
+#         "/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/train"
+#     )
+#     dataset_val_path: str = (
+#         "/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/val"
+#     )
 
-    @device.setter
-    def device(self, value: str):
-        self._device = value
+#     is_training: bool = True
+#     num_epochs: int = 1
+#     train_batch_size: int = 1024 * 4
+#     max_grad_norm: float = 1.0
 
-    @property
-    def dtype(self):
-        return dtype_mapping[self._dtype]
+#     verbose: bool = False
+#     log_to_wandb: bool = True
+#     wandb_project: str = "tinyclip_sae_16_hyperparam_sweep_lr"
+#     wandb_entity: Optional[str] = None
+#     wandb_log_frequency: int = 10
 
-    @dtype.setter
-    def dtype(self, value: str):
-        self._dtype = value
+#     lr: float = 0.001
+#     l1_coefficient: float = 0.0002
+#     lp_norm: float = 1
+#     lr_scheduler_name: str = "cosineannealingwarmup"
+#     lr_warm_up_steps: int = 500
 
-    @property
-    def total_training_images(self):
-        return int(1_300_000 * self.num_epochs)
+#     n_validation_runs: int = 0
+#     n_checkpoints: int = 10
+#     checkpoint_path: str = (
+#         "/network/scratch/p/praneet.suresh/open_clip_celeba_checkpoints/"
+#     )
 
-    @property
-    def total_training_tokens(self):
-        if self.cls_token_only:
-            tokens_per_image = 1
-        elif self.use_patches_only:
-            tokens_per_image = self.context_size - 1
-        else:
-            tokens_per_image = self.context_size
-        return self.total_training_images * tokens_per_image
+#     n_batches_in_buffer: int = 20
+#     store_batch_size: int = 32
+#     num_workers: int = 16
 
-    @property
-    def total_training_steps(self):
-        return self.total_training_tokens // self.train_batch_size
+#     use_ghost_grads: bool = False
+#     feature_sampling_window: int = 1000
+#     dead_feature_window: int = 5000
+#     dead_feature_threshold: float = 1e-8
+
+#     min_l0: Optional[float] = None
+#     min_explained_variance: Optional[float] = None
+
+#     @property
+#     def device(self):
+#         return torch.device(self._device)
+
+#     @device.setter
+#     def device(self, value: str):
+#         self._device = value
+
+#     @property
+#     def dtype(self):
+#         return dtype_mapping[self._dtype]
+
+#     @dtype.setter
+#     def dtype(self, value: str):
+#         self._dtype = value
+
+#     @property
+#     def total_training_images(self):
+#         return int(1_300_000 * self.num_epochs)
+
+#     @property
+#     def total_training_tokens(self):
+#         if self.cls_token_only:
+#             tokens_per_image = 1
+#         elif self.use_patches_only:
+#             tokens_per_image = self.context_size - 1
+#         else:
+#             tokens_per_image = self.context_size
+#         return self.total_training_images * tokens_per_image
+
+#     @property
+#     def total_training_steps(self):
+#         return self.total_training_tokens // self.train_batch_size
 
 
 # import json
