@@ -47,7 +47,7 @@ For a full list of SAEs for all layers, including CLIP top k, CLIP transcoders, 
 
 We recommend starting with the vanilla CLIP SAEs, which are the highest quality. If you are just getting started with steering CLIP's output, we recommend using the [Layer 11 resid-post SAE](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
 
-## [Experimental] Basic Mechanistic Interpretability
+# [Experimental] Basic Mechanistic Interpretability Features
 An earlier rendition of Prisma included features for basic mechanistic interpretability, including the logit lens and attention head visualizations. In addition to the tutorial notebooks below, you can also check out this [corresponding talk](https://youtu.be/gQbh-RZtsq4?t=0) on some of these techniques.
 
 1. [Main ViT Demo](https://colab.research.google.com/drive/1TL_BY1huQ4-OTORKbiIg7XfTyUbmyToQ) - Overview of main mechanistic interpretability technique on a ViT, including direct logit attribution, attention head visualization, and activation patching. The activation patching switches the net's prediction from tabby cat to Border collie with a minimum ablation.
@@ -87,7 +87,6 @@ For a full demo of Prisma's features, including the visualizations below with in
 * [timm ViTs](https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/vision_transformer.py)
 * [CLIP](https://huggingface.co/docs/transformers/main/en/model_doc/clip)
 * Our custom toy models (see below)
-
 
 ## Custom Models & Checkpoints
 
