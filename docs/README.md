@@ -13,10 +13,10 @@ We also include a suite of [open source SAEs for all layers of CLIP and DINO](ht
 
 **Table of Contents**
 - [Installation](#Installation)
-- [Vision SAE Demo Notebooks](#SAE-Demo-Notebooks)
-- [Vision SAE Pretrained Weights)(#Pretrained-Vision-SAE-Suite)
-- [Basic Mechanistic Interpretability](#Basic-Mechanistic-Interpretability)
 - [Models Supported](#Models-Supported)
+- [Vision SAE Demo Notebooks](#SAE-Demo-Notebooks)
+- [Vision SAE Pretrained Weights](#Suite-of-Pretrained-Vision-SAE-Weights)
+- [Basic Mechanistic Interpretability](#Basic-Mechanistic-Interpretability)
 - [Contributors](#Contributors)
 - [Citation](#Citation)
 
@@ -47,16 +47,15 @@ model_name = "open-clip:laion/CLIP-ViT-B-16-DataComp.L-s1B-b8K
 model = load_hooked_model(model_name)
 model.to('cuda') # Move to cuda if available
 ```
+# SAE Pretrained Weights, Training, and Evaluation Code
 
-# SAE Pretrained Weights and Evaluation Code
-
-#SAE Demo Notebooks
+## SAE Demo Notebooks
 Here are notebooks to load, train, and evaluate SAEs on the supported models:
 * [SAE loading notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/1_Load_SAE.ipynb)
 * [SAE training notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/2_Train_SAE.ipynb)
 * [SAE evaluation notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/3_Evaluate_SAE.ipynb), which includes L0, cosine similarity, and reconstruction loss.
 
-# Suite of Pretrained Vision SAE Weights
+## Suite of Pretrained Vision SAE Weights
 For a full list of SAEs for all layers, including CLIP top k, CLIP transcoders, and DINO SAEs, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475).
 
 We recommend starting with the vanilla CLIP SAEs, which are the highest quality. If you are just getting started with steering CLIP's output, we recommend using the [Layer 11 resid-post SAE](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
@@ -68,8 +67,8 @@ An earlier version of Prisma included features for basic mechanistic interpretab
 2. [Emoji Logit Lens](https://colab.research.google.com/drive/1yAHrEoIgkaVqdWC4GY-GQ46ZCnorkIVo) - Deeper dive into layer- and patch-level predictions with interactive plots.
 3. [Interactive Attention Head Tour](https://colab.research.google.com/drive/1P252fCvTHNL_yhqJDeDVOXKCzIgIuAz2) - Deeper dive into the various types of attention heads a ViT contains with interactive JavaScript.
 
-## Legacy/Experimental Features
-For a full demo of Prisma's features, including the visualizations below with interactivity, check out the demo notebooks above.
+## Features
+For a demo of Prisma's mech interp features, including the visualizations below with interactivity, check out the demo notebooks above.
 
 **Attention head visualization**
 
@@ -95,7 +94,6 @@ For a full demo of Prisma's features, including the visualizations below with in
 <img src="assets/images/cheetah segmentation.png" width="400">
 
 </div>
-
 
 ## Custom Models & Checkpoints
 
