@@ -3,13 +3,19 @@
 </div>
 
 # ViT-Prisma
-This repo contains code for vision mechanistic interpretability, including activation caching and SAE training. We include pretrained SAE weights and transcoders on CLIP and DINO. More details are below.
+This repo contains code for vision and video mechanistic interpretability, including activation caching and SAE training. We include pretrained SAE weights and transcoders on CLIP and DINO. We support a variety of vision/video models from Huggingface and OpenCLIP.
 
-**Check out our whitepaper [Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video](https://arxiv.org/abs/2504.19475).** 
+**Check out our whitepaper [Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video](https://arxiv.org/abs/2504.19475).** The original Less Wrong post [here](https://www.lesswrong.com/posts/kobJymvvcvhbjWFKe/laying-the-foundations-for-vision-and-multimodal-mechanistic).
 
 **Table of Contents**
-- [SAE Pretrained Weights and Evaluation Code](#SAE-Pretrained-Weights-and-Evaluation-Code)
+- [How to Use this Repo]
+- [Vision SAE Demo Notebooks](##SAE-Pretrained-Weights-and-Evaluation-Code)
+- [Vision SAE Pretrained Weights)[##Pretrained-Vision-SAE-Suite]
+- [Models Supported]
 - [Contributors](#Contributors)
+- [Citation](#Citation)
+
+# How to Use this Repo
 
 
 # SAE Pretrained Weights and Evaluation Code
@@ -71,7 +77,7 @@ sae = trainer.run()
 from vit_prisma.sae import SparsecoderEval
 # Step 1: Load SAE and hooked vision/video model as in examples above
 
-# Step 2: Run Sparsecoder Eval pboject
+# Step 2: Run Sparsecoder Eval object
 eval_runner = SparsecoderEval(sae, model) 
 metrics = eval_runner.run_eval(is_clip=True)
 ```
@@ -112,21 +118,6 @@ More statistics about the vanilla SAEs are below:
 | [link](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_mlp_out-l1-5e-05) | 11    | mlp_out    | 5e-5      | 89.7             | 748.14  | 745.5       | 0.972   | 0.993          | 6.762  | 6.759     | 6.768        | 135.77         | 100              |
 | [link](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05) | 11    | resid_post | 1e-5      | 98.4             | 1405.0  | 1189.0      | 0.993   | 0.987          | 6.762  | 6.765     | 6.908        | 98.03          | 99.99            |
 
-
-# Vision Transformer (ViT) Prisma Library
-<div style="display: flex; align-items: center;">
-  <img src="assets/images/house.jpg" alt="Logo Image 1" width="200" style="margin-right: 10px;"/>
-  <img src="assets/images/prism1.jpg" alt="Logo Image 2" width="200" style="margin-right: 10px;"/>
-  <img src="assets/images/house2.jpg" alt="Logo Image 3" width="200"/>
-</div>
-
-For a full introduction, including Open Problems in vision mechanistic interpretability, see the original Less Wrong post [here](https://www.lesswrong.com/posts/kobJymvvcvhbjWFKe/laying-the-foundations-for-vision-and-multimodal-mechanistic).
-
-ViT Prisma is an open-source mechanistic interpretability library for vision and multimodal models. Currently, the library supports ViTs and CLIP. This library was created by [Sonia Joseph](https://twitter.com/soniajoseph_). ViT Prisma is largely based on [TransformerLens](https://github.com/neelnanda-io/TransformerLens) by Neel Nanda.
-
-*Contributors:* [Praneet Suresh](https://github.com/PraneetNeuro), [Yash Vadi](https://github.com/YashVadi), [Rob Graham](https://github.com/themachinefan), [Lorenz Hufe](https://github.com/lowlorenz), [Edward Stevinson](https://github.com/stevinson), and [Ethan Goldfarb](https://github.com/ekg15), _and more coming soon_. You learn more about our contributions on our [Contributors page](https://github.com/soniajoseph/ViT-Prisma/blob/main/docs/PRISMA_CONTRIBUTORS.md) (coming soon).
-
-We welcome new contributors. Check out our contributing guidelines [here](CONTRIBUTING.md) and our [open Issues](https://github.com/soniajoseph/ViT-Prisma/issues).
 
 ## Installing Repo
 
@@ -246,6 +237,10 @@ Upload your trained models to Huggingface. Follow the [Huggingface guidelines](h
 
 Include frequent checkpoints throughout training, which will help other researchers understand training dynamics.
 
+# Contributors
+Thank you to all our fantastic contributors! [Praneet Suresh](https://github.com/PraneetNeuro), [Yash Vadi](https://github.com/YashVadi), [Rob Graham](https://github.com/themachinefan), [Lorenz Hufe](https://github.com/lowlorenz), [Edward Stevinson](https://github.com/stevinson), and [Ethan Goldfarb](https://github.com/ekg15), _and more coming soon_. You learn more about our contributions on our [Contributors page](https://github.com/soniajoseph/ViT-Prisma/blob/main/docs/PRISMA_CONTRIBUTORS.md) (coming soon).
+
+We welcome new contributors. Check out our contributing guidelines [here](CONTRIBUTING.md) and our [open Issues](https://github.com/soniajoseph/ViT-Prisma/issues).
 
 # Citation
 
