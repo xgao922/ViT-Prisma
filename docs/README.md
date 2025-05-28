@@ -8,15 +8,42 @@ This repo contains code for vision mechanistic interpretability, including activ
 # SAE Pretrained Weights and Evaluation Code
 
 ## SAE Demo Notebooks
-Notebooks to load, train, and evaluate SAEs.
+Here are notebooks to load, train, and evaluate SAEs.
 * [SAE loading notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/1_Load_SAE.ipynb)
+To load an SAE:
+```
+from huggingface_hub import hf_hub_download, list_repo_files
+from vit_prisma.sae import SparseAutoencoder
+
+repo_id = "Prisma-Multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-10-hook_mlp_out-l1-1e-05" # Change this to your chosen SAE. See /docs for a list of SAEs.
+
+# Step 1: Download SAE from Hugginface
+sae_path = hf_hub_download(repo_id, file_name='weights.pt') # Download weights
+hf_hub_download(repo_id, config_name='config.pt') # Download config
+
+# Step 2: Load the pretrained SAE weights from the downloaded path
+print(f"Loading SAE from {sae_path}...")
+sae = SparseAutoencoder.load_from_pretrained(sae_path) # This now automatically gets config.json and converts into the VisionSAERunnerConfig object
+
+```
 * [SAE training notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/2_Train_SAE.ipynb)
+To train an SAE:
+```
+trainer = VisionSAETrainer(sae_trainer_cfg, model, train_dataset, eval_dataset)
+sae = trainer.run()
+```
 * [SAE evaluation notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/3_Evaluate_SAE.ipynb)
+To evaluate an SAE, including L0, cosine similarity, and reconstruction loss:
+```
+from vit_prisma.sae import SparsecoderEval
+eval_runner = SparsecoderEval(sae, model)
+metrics = eval_runner.run_eval(is_clip=True)
+```
 
 ## Pretrained Vision SAE Suite
 For a full list of SAEs, including CLIP top k, CLIP transcoders, and DINO SAEs for all layers, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475).
 
-We recommend starting with the vanilla CLIP SAEs, which are the highest fidelity. If you are just getting started with steering CLIP's output, we recommend using [`layer-11-hook-resid-post`](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
+We recommend starting with the vanilla CLIP SAEs, which are the highest fidelity. If you are just getting started with steering CLIP's output, we recommend using the [Layer 11 resid-post SAE](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
 
 More statistics about the vanilla SAEs are below:
 
