@@ -49,7 +49,17 @@ sae_trainer_cfg = VisionModelSAERunnerConfig(
     checkpoint_path = '/network/scratch/s/sonia.joseph'
 )
 
-# Step 3: Train with Vision SAE Trainer Object
+# Step 3: Load datsets
+from vit_prisma.transforms import get_clip_val_transforms
+
+imagenet_train_path = '/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/train'
+imagenet_validation_path = '/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/val'
+
+data_transforms = get_clip_val_transforms()
+train_dataset = torchvision.datasets.ImageFolder(imagenet_train_path, transform=data_transforms)
+eval_dataset = torchvision.datasets.ImageFolder(imagenet_validation_path, transform=data_transforms)
+
+# Step 4: Train with Vision SAE Trainer Object
 from vit_prisma.sae import VisionSAETrainer
 trainer = VisionSAETrainer(sae_trainer_cfg, model, train_dataset, eval_dataset)
 sae = trainer.run()
@@ -57,7 +67,10 @@ sae = trainer.run()
 * [SAE evaluation notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/3_Evaluate_SAE.ipynb) to evaluate an SAE, including L0, cosine similarity, and reconstruction loss:
 ```
 from vit_prisma.sae import SparsecoderEval
-eval_runner = SparsecoderEval(sae, model) # Load SAE and model as in examples above
+# Step 1: Load SAE and hooked vision/video model as in examples above
+
+# Step 2: Run Sparsecoder Eval pboject
+eval_runner = SparsecoderEval(sae, model) 
 metrics = eval_runner.run_eval(is_clip=True)
 ```
 
