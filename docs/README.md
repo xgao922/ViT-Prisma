@@ -5,7 +5,7 @@
 # Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video
 This repo contains code for vision and video mechanistic interpretability, including activation caching and SAE training. We support a variety of vision/video models from Huggingface and OpenCLIP.
 
-Mechanistic interpretability is currently split into two parts: circuit-analysis and sparse autoencoders (SAEs). Circuit-analysis finds the causal links between internal components of the model and primarily relies on activation caching. SAEs are like a more fine-grained "primitive" that you can use to examine intermediate activations. Prisma has the infrastructure to do both.
+Mechanistic interpretability is broadly split into two parts: circuit-analysis and sparse autoencoders (SAEs). Circuit-analysis finds the causal links between internal components of the model and primarily relies on activation caching. SAEs are like a more fine-grained "primitive" that you can use to examine intermediate activations. Prisma has the infrastructure to do both.
 
 We also include a suite of [open source SAEs for all layers of CLIP and DINO](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md), including transcoders for all layers of CLIP, that you can download from Huggingface.
 
@@ -131,7 +131,7 @@ We welcome new contributors. Check out our contributing guidelines [here](CONTRI
 
 # Citation
 
-Please cite this repository when used in papers or research projects.
+Please cite this repository when used in papers or research projects. Thank you for supporting the community! 
 ```
 @misc{joseph2025prismaopensourcetoolkit,
       title={Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video}, 
