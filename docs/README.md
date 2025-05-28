@@ -83,12 +83,15 @@ For a demo of Prisma's mech interp features, including the visualizations below 
 </div>
 
 **Activation patching**
+
 <img src="assets/images/patched head.png" width="400">
 
 **Direct logit attribution**
+
 <img src="assets/images/direct logit attribution.png" width="600">
 
 **Emoji logit lens**
+
 <div style="display: flex; align-items: center;">
 <img src="assets/images/dogit lens 2.png" width="400">
 <img src="assets/images/cat toilet segmentation.png" width="400">
