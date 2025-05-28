@@ -5,13 +5,7 @@
 # ViT-Prisma
 This repo contains code for vision mechanistic interpretability, including activation caching and SAE training. We include pretrained SAE weights and transcoders on CLIP and DINO. More details are below.
 
-# Available models
-We have hundreds of available vision models through our HookedViT class, including CLIP, DINO, and JEPA.
-
-# SAEs
-
-## Pretrained SAE weights
-See [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md). We recommend starting with the vanilla SAEs which are the highest fidelity. Also, check out our whitepaper [here].
+# SAE Pretrained Weights and Evaluation Code
 
 ## SAE Demo Notebooks
 Notebooks to load, train, and evaluate SAEs.
@@ -19,8 +13,12 @@ Notebooks to load, train, and evaluate SAEs.
 * [SAE training notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/2_Train_SAE.ipynb)
 * [SAE evaluation notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/3_Evaluate_SAE.ipynb)
 
-## SAE Evaluation Table
-Below are the evaluation statistics for the vanilla CLIP SAEs, which we recommend starting with (see more details in our whitepaper). For a full list of SAEs, including CLIP top k, CLIP transcoders, and DINO SAEs, see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md).
+## Pretrained Vision SAE Suite
+For a full list of SAEs, including CLIP top k, CLIP transcoders, and DINO SAEs for all layers, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475).
+
+We recommend starting with the vanilla CLIP SAEs, which are the highest fidelity. If you are just getting started with steering CLIP's output, we recommend using [`layer-11-hook-resid-post`](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
+
+More statistics about the vanilla SAEs are below:
 
 ### Vanilla SAEs (All Patches)
 
