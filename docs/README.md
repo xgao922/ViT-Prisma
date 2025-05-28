@@ -25,10 +25,6 @@ We also include a suite of [open source SAEs for all layers of CLIP and DINO](ht
 
 We recommend installing from source:
 
-For the latest version, install the repo from the source. While this version will include the latest developments, they may not be fully tested.
-
-**Install from source**
-To install as an editable repo from source:
 ```
 git clone https://github.com/soniajoseph/ViT-Prisma
 cd ViT-Prisma
