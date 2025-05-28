@@ -5,12 +5,13 @@
 # ViT-Prisma
 This repo contains code for vision mechanistic interpretability, including activation caching and SAE training. We include pretrained SAE weights and transcoders on CLIP and DINO. More details are below.
 
+**Check out our whitepaper [Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video](https://arxiv.org/abs/2504.19475).** 
+
 # SAE Pretrained Weights and Evaluation Code
 
 ## SAE Demo Notebooks
 Here are notebooks to load, train, and evaluate SAEs.
-* [SAE loading notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/1_Load_SAE.ipynb)
-To load an SAE:
+* [SAE loading notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/1_Load_SAE.ipynb) to load an SAE:
 ```
 from huggingface_hub import hf_hub_download, list_repo_files
 from vit_prisma.sae import SparseAutoencoder
@@ -26,14 +27,12 @@ print(f"Loading SAE from {sae_path}...")
 sae = SparseAutoencoder.load_from_pretrained(sae_path) # This now automatically gets config.json and converts into the VisionSAERunnerConfig object
 
 ```
-* [SAE training notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/2_Train_SAE.ipynb)
-To train an SAE:
+* [SAE training notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/2_Train_SAE.ipynb) to train an SAE:
 ```
 trainer = VisionSAETrainer(sae_trainer_cfg, model, train_dataset, eval_dataset)
 sae = trainer.run()
 ```
-* [SAE evaluation notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/3_Evaluate_SAE.ipynb)
-To evaluate an SAE, including L0, cosine similarity, and reconstruction loss:
+* [SAE evaluation notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/3_Evaluate_SAE.ipynb) to evaluate an SAE, including L0, cosine similarity, and reconstruction loss:
 ```
 from vit_prisma.sae import SparsecoderEval
 eval_runner = SparsecoderEval(sae, model)
@@ -214,13 +213,17 @@ Include frequent checkpoints throughout training, which will help other research
 # Citation
 
 Please cite this repository when used in papers or research projects.
-
 ```
-@misc{
-
+@misc{joseph2025prismaopensourcetoolkit,
+      title={Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video}, 
+      author={Sonia Joseph and Praneet Suresh and Lorenz Hufe and Edward Stevinson and Robert Graham and Yash Vadi and Danilo Bzdok and Sebastian Lapuschkin and Lee Sharkey and Blake Aaron Richards},
+      year={2025},
+      eprint={2504.19475},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2504.19475}, 
 }
 ```
-
 ```
 @misc{joseph2023vit,
   author = {Sonia Joseph},
