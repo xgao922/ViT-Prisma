@@ -2,10 +2,6 @@
   <img src="assets/images/prisma.jpg" alt="Vit Prisma Logo" style="margin-right: 10px;"/>
 </div>
 
-<video controls autoplay muted loop width="640">
-  <source src="https://raw.githubusercontent.com/Prisma-Multimodal/ViT-Prisma-Assets/main/sae_video.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
 
 # Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video
 This repo contains code for vision and video mechanistic interpretability, including activation caching and SAE training. We support a variety of vision/video models from Huggingface and OpenCLIP.
@@ -62,7 +58,7 @@ Here are notebooks to load, train, and evaluate SAEs on the supported models:
 
 ## Suite of Pretrained Vision SAE Weights
 
-For a full list of SAEs for all layers, including CLIP top k, CLIP transcoders, and DINO SAEs, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475).
+For a full list of SAEs for all layers, including CLIP top k, CLIP transcoders, and DINO SAEs, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475). We've also visualized some Prisma SAEs [here](https://semanticlens.hhi-research-insights.de/umap-view).
 
 We recommend starting with the vanilla CLIP SAEs, which are the highest quality. If you are just getting started with steering CLIP's output, we recommend using the [Layer 11 resid-post SAE](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
 
