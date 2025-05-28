@@ -5,6 +5,9 @@
 # ViT-Prisma
 This repo contains code for vision mechanistic interpretability, including activation caching and SAE training. We include pretrained SAE weights and transcoders on CLIP and DINO. More details are below.
 
+## Table of Contents
+- [SAE Pretrained Weights and Evaluation Code](#SAE-Pretrained-Weights-and-Evaluation-Code)
+
 **Check out our whitepaper [Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video](https://arxiv.org/abs/2504.19475).** 
 
 # SAE Pretrained Weights and Evaluation Code
@@ -40,7 +43,7 @@ metrics = eval_runner.run_eval(is_clip=True)
 ```
 
 ## Pretrained Vision SAE Suite
-For a full list of SAEs, including CLIP top k, CLIP transcoders, and DINO SAEs for all layers, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475).
+For a full list of SAEs for all layers, including CLIP top k, CLIP transcoders, and DINO SAEs, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475).
 
 We recommend starting with the vanilla CLIP SAEs, which are the highest fidelity. If you are just getting started with steering CLIP's output, we recommend using the [Layer 11 resid-post SAE](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
 
