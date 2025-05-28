@@ -5,10 +5,12 @@
 # ViT-Prisma
 This repo contains code for vision mechanistic interpretability, including activation caching and SAE training. We include pretrained SAE weights and transcoders on CLIP and DINO. More details are below.
 
-## Table of Contents
-- [SAE Pretrained Weights and Evaluation Code](#SAE-Pretrained-Weights-and-Evaluation-Code)
-
 **Check out our whitepaper [Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video](https://arxiv.org/abs/2504.19475).** 
+
+**Table of Contents**
+- [SAE Pretrained Weights and Evaluation Code](#SAE-Pretrained-Weights-and-Evaluation-Code)
+- [Contributors](#Contributors)
+
 
 # SAE Pretrained Weights and Evaluation Code
 
