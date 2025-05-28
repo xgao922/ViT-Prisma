@@ -32,13 +32,32 @@ sae = SparseAutoencoder.load_from_pretrained(sae_path) # This now automatically 
 ```
 * [SAE training notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/2_Train_SAE.ipynb) to train an SAE:
 ```
+# Step 1: Load model
+from vit_prisma.models.model_loader import load_hooked_model
+
+model_name = sae.cfg.model_name
+model = load_hooked_model(model_name)
+model.to(DEVICE)
+
+# Step 2: Create Vision SAE Trainer Config
+from vit_prisma.sae import VisionModelSAERunnerConfig
+sae_trainer_cfg = VisionModelSAERunnerConfig( 
+    hook_point_layer=10,
+    layer_subtype='hook_resid_post',
+    feature_sampling_window=1000,
+    activation_fn_str='relu',
+    checkpoint_path = '/network/scratch/s/sonia.joseph'
+)
+
+# Step 3: Train with Vision SAE Trainer Object
+from vit_prisma.sae import VisionSAETrainer
 trainer = VisionSAETrainer(sae_trainer_cfg, model, train_dataset, eval_dataset)
 sae = trainer.run()
 ```
 * [SAE evaluation notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/3_Evaluate_SAE.ipynb) to evaluate an SAE, including L0, cosine similarity, and reconstruction loss:
 ```
 from vit_prisma.sae import SparsecoderEval
-eval_runner = SparsecoderEval(sae, model)
+eval_runner = SparsecoderEval(sae, model) # Load SAE and model as in examples above
 metrics = eval_runner.run_eval(is_clip=True)
 ```
 
