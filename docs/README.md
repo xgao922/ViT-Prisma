@@ -2,25 +2,41 @@
   <img src="assets/images/prisma.jpg" alt="Vit Prisma Logo" style="margin-right: 10px;"/>
 </div>
 
-# ViT-Prisma
-This repo contains code for vision and video mechanistic interpretability, including activation caching and SAE training. We include pretrained SAE weights and transcoders on CLIP and DINO. We support a variety of vision/video models from Huggingface and OpenCLIP.
+# Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video
+This repo contains code for vision and video mechanistic interpretability, including activation caching and SAE training. We support a variety of vision/video models from Huggingface and OpenCLIP.
 
-**Check out our whitepaper [Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video](https://arxiv.org/abs/2504.19475).** The original Less Wrong post [here](https://www.lesswrong.com/posts/kobJymvvcvhbjWFKe/laying-the-foundations-for-vision-and-multimodal-mechanistic).
+Mechanistic interpretability is currently split into two parts: circuit-analysis and sparse autoencoders (SAEs). Circuit-analysis finds the causal links between internal components of the model and primarily relies on activation caching. SAEs are like a more fine-grained "primitive" that you can use to examine intermediate activations. Prisma has the infrastructure to do both.
+
+We also include a suite of [open source SAEs for all layers of CLIP and DINO](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md) that you can download from Huggingface.
+
+**For more details, check out our whitepaper [Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video](https://arxiv.org/abs/2504.19475).** Also, check out the original Less Wrong post [here](https://www.lesswrong.com/posts/kobJymvvcvhbjWFKe/laying-the-foundations-for-vision-and-multimodal-mechanistic).
 
 **Table of Contents**
-- [How to Use this Repo]
-- [Vision SAE Demo Notebooks](##SAE-Pretrained-Weights-and-Evaluation-Code)
-- [Vision SAE Pretrained Weights)[##Pretrained-Vision-SAE-Suite]
-- [Models Supported]
+- [Installation](#Installation)
+- [Vision SAE Demo Notebooks](#SAE-Demo-Notebooks)
+- [Vision SAE Pretrained Weights)(#Pretrained-Vision-SAE-Suite)
+- [Basic Mechanistic Interpretability](#Basic-Mechanistic-Interpretability)
+- [Models Supported](#Models-Supported)
 - [Contributors](#Contributors)
 - [Citation](#Citation)
 
-# How to Use this Repo
+# Installation
 
+We recommend installing from source:
+
+For the latest version, install the repo from the source. While this version will include the latest developments, they may not be fully tested.
+
+**Install from source**
+To install as an editable repo from source:
+```
+git clone https://github.com/soniajoseph/ViT-Prisma
+cd ViT-Prisma
+pip install -e .
+```
 
 # SAE Pretrained Weights and Evaluation Code
 
-## SAE Demo Notebooks
+#SAE Demo Notebooks
 Here are notebooks to load, train, and evaluate SAEs.
 * [SAE loading notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/1_Load_SAE.ipynb) to load an SAE:
 ```
@@ -82,7 +98,7 @@ eval_runner = SparsecoderEval(sae, model)
 metrics = eval_runner.run_eval(is_clip=True)
 ```
 
-## Pretrained Vision SAE Suite
+# Pretrained Vision SAE Suite
 For a full list of SAEs for all layers, including CLIP top k, CLIP transcoders, and DINO SAEs, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475).
 
 We recommend starting with the vanilla CLIP SAEs, which are the highest fidelity. If you are just getting started with steering CLIP's output, we recommend using the [Layer 11 resid-post SAE](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
@@ -119,27 +135,8 @@ More statistics about the vanilla SAEs are below:
 | [link](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05) | 11    | resid_post | 1e-5      | 98.4             | 1405.0  | 1189.0      | 0.993   | 0.987          | 6.762  | 6.765     | 6.908        | 98.03          | 99.99            |
 
 
-## Installing Repo
 
-For the latest version, install the repo from the source. While this version will include the latest developments, they may not be fully tested.
-
-For the tested and stable release, install Prisma as a package.
-
-**Install as a package**
-Installing with pip:
-```
-pip install vit_prisma
-```
-
-**Install from source**
-To install as an editable repo from source:
-```
-git clone https://github.com/soniajoseph/ViT-Prisma
-cd ViT-Prisma
-pip install -e .
-```
-
-## How do I use this repo?
+## Basic Mechanistic Interpretability
 Check out [our guide](https://github.com/soniajoseph/ViT-Prisma/blob/main/docs/UsageGuide.md).
 
 Check out our tutorial notebooks for using the repo. You can also check out this [corresponding talk](https://youtu.be/gQbh-RZtsq4?t=0) on some of these techniques.
