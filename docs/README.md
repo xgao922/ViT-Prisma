@@ -7,7 +7,7 @@ This repo contains code for vision and video mechanistic interpretability, inclu
 
 Mechanistic interpretability is currently split into two parts: circuit-analysis and sparse autoencoders (SAEs). Circuit-analysis finds the causal links between internal components of the model and primarily relies on activation caching. SAEs are like a more fine-grained "primitive" that you can use to examine intermediate activations. Prisma has the infrastructure to do both.
 
-We also include a suite of [open source SAEs for all layers of CLIP and DINO](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md) that you can download from Huggingface.
+We also include a suite of [open source SAEs for all layers of CLIP and DINO](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md), including transcoders for all layers of CLIP, that you can download from Huggingface.
 
 **For more details, check out our whitepaper [Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video](https://arxiv.org/abs/2504.19475).** Also, check out the original Less Wrong post [here](https://www.lesswrong.com/posts/kobJymvvcvhbjWFKe/laying-the-foundations-for-vision-and-multimodal-mechanistic).
 
@@ -34,27 +34,41 @@ cd ViT-Prisma
 pip install -e .
 ```
 
+# Models Supported
+We support most vision/video transformers loaded from OpenCLIP and Huggingface, including ViTs, CLIP, DINO, and JEPA, with a few exceptions (e.g. if the architecture is substantially different).
+
+For a list of model names, check out our model registry [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/src/vit_prisma/models/model_config_registry.py).
+
+To load a model:
+```
+from vit_prisma.models.model_loader import load_hooked_model
+
+model_name = "open-clip:laion/CLIP-ViT-B-16-DataComp.L-s1B-b8K
+model = load_hooked_model(model_name)
+model.to('cuda') # Move to cuda if available
+```
+
 # SAE Pretrained Weights and Evaluation Code
 
 #SAE Demo Notebooks
-Here are notebooks to load, train, and evaluate SAEs.
+Here are notebooks to load, train, and evaluate SAEs on the supported models:
 * [SAE loading notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/1_Load_SAE.ipynb)
 * [SAE training notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/2_Train_SAE.ipynb)
 * [SAE evaluation notebook](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/demos/3_Evaluate_SAE.ipynb), which includes L0, cosine similarity, and reconstruction loss.
 
-# Pretrained Vision SAE Suite
+# Suite of Pretrained Vision SAE Weights
 For a full list of SAEs for all layers, including CLIP top k, CLIP transcoders, and DINO SAEs, **see [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md)**. More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475).
 
 We recommend starting with the vanilla CLIP SAEs, which are the highest quality. If you are just getting started with steering CLIP's output, we recommend using the [Layer 11 resid-post SAE](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
 
-# [Experimental] Basic Mechanistic Interpretability Features
-An earlier rendition of Prisma included features for basic mechanistic interpretability, including the logit lens and attention head visualizations. In addition to the tutorial notebooks below, you can also check out this [corresponding talk](https://youtu.be/gQbh-RZtsq4?t=0) on some of these techniques.
+# [Legacy/Experimental] Basic Mechanistic Interpretability Features
+An earlier version of Prisma included features for basic mechanistic interpretability, including the logit lens and attention head visualizations. In addition to the tutorial notebooks below, you can also check out this [corresponding talk](https://youtu.be/gQbh-RZtsq4?t=0) on some of these techniques.
 
 1. [Main ViT Demo](https://colab.research.google.com/drive/1TL_BY1huQ4-OTORKbiIg7XfTyUbmyToQ) - Overview of main mechanistic interpretability technique on a ViT, including direct logit attribution, attention head visualization, and activation patching. The activation patching switches the net's prediction from tabby cat to Border collie with a minimum ablation.
 2. [Emoji Logit Lens](https://colab.research.google.com/drive/1yAHrEoIgkaVqdWC4GY-GQ46ZCnorkIVo) - Deeper dive into layer- and patch-level predictions with interactive plots.
 3. [Interactive Attention Head Tour](https://colab.research.google.com/drive/1P252fCvTHNL_yhqJDeDVOXKCzIgIuAz2) - Deeper dive into the various types of attention heads a ViT contains with interactive JavaScript.
 
-### Features
+## Legacy/Experimental Features
 For a full demo of Prisma's features, including the visualizations below with interactivity, check out the demo notebooks above.
 
 **Attention head visualization**
@@ -83,16 +97,11 @@ For a full demo of Prisma's features, including the visualizations below with in
 </div>
 
 
-## Models Supported
-* [timm ViTs](https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/vision_transformer.py)
-* [CLIP](https://huggingface.co/docs/transformers/main/en/model_doc/clip)
-* Our custom toy models (see below)
-
 ## Custom Models & Checkpoints
 
 ### ImageNet-1k classification checkpoints (patch size 32)
 
-This model was trained by Praneet Suresh. All models include training checkpoints, in case you want to analyze training dynamics.
+All models include training checkpoints, in case you want to analyze training dynamics.
 
 This larger patch size ViT has inspectable attention heads; else the patch size 16 attention heads are too large to easily render in JavaScript.
 
