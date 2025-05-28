@@ -132,7 +132,7 @@ Accuracy `[ <Acc> | <Top5 Acc> ]`
 # Contributors
 Thank you to all our fantastic contributors! [Praneet Suresh](https://github.com/PraneetNeuro), [Yash Vadi](https://github.com/YashVadi), [Rob Graham](https://github.com/themachinefan), [Lorenz Hufe](https://github.com/lowlorenz), [Edward Stevinson](https://github.com/stevinson), and [Ethan Goldfarb](https://github.com/ekg15), _and more coming soon_. You learn more about our contributions on our [Contributors page](https://github.com/soniajoseph/ViT-Prisma/blob/main/docs/PRISMA_CONTRIBUTORS.md) (coming soon).
 
-Thank you to Leo Gao, Joseph Bloom, and Neel Nanda for their and feedback discussions at the beginning of this repo's development.
+Thank you to Leo Gao, Joseph Bloom, and Neel Nanda for the feedback and discussions at the beginning of this repo's development.
 
 We welcome new contributors. Check out our contributing guidelines [here](CONTRIBUTING.md) and our [open Issues](https://github.com/soniajoseph/ViT-Prisma/issues).
 
