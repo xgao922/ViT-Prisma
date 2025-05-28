@@ -1,13 +1,16 @@
+<div style="display: flex; align-items: center;">
+  <img src="assets/images/prisma.jpg" alt="Vit Prisma Logo" style="margin-right: 10px;"/>
+</div>
+
 # ViT-Prisma
-
-[]
-
 This repo contains code for vision mechanistic interpretability, including activation caching and SAE training. We include pretrained SAE weights and transcoders on CLIP and DINO. More details are below.
+
+# Available models
+We have hundreds of available vision models through our HookedViT class, including CLIP, DINO, and JEPA.
 
 # SAEs
 
 ## Pretrained SAE weights
-
 See [here](https://github.com/Prisma-Multimodal/ViT-Prisma/blob/main/docs/sae_table.md). We recommend starting with the vanilla SAEs which are the highest fidelity. Also, check out our whitepaper [here].
 
 ## SAE Demo Notebooks
