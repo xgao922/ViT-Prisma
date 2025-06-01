@@ -61,7 +61,7 @@ def load_pretrained_linear_weights(linear_classifier, model_name, patch_size):
 
 class SparsecoderEval():
 
-    def __init__(self, sc: SparseAutoencoder, model: HookedViT):
+    def __init__(self, sc: SparseAutoencoder, model: HookedViT, dataset: DatasetFolder):
         
         self.sc = sc
         self.model = model
@@ -73,13 +73,7 @@ class SparsecoderEval():
 
         data_transforms = get_model_transforms(self.model.cfg.model_name)
 
-        self.validation_dataset = DatasetFolder(
-            root='/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/val',
-            loader=default_loader,
-            extensions=('.jpg', '.jpeg', '.png'),
-            transform=data_transforms
-        )
-
+        self.validation_dataset = dataset
         self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=128, shuffle=True, num_workers=4)
 
         if 'dino' in self.model.cfg.model_name:
@@ -133,12 +127,12 @@ class SparsecoderEval():
 
             for _, batch in enumerate(pbar):
                 batch_tokens, gt_labels = batch
-                batch_tokens = batch_tokens.to(self.sc.device)
+                batch_tokens = batch_tokens.to(self.sc.cfg.device)
                 batch_size = batch_tokens.shape[0]
                 # batch shape
                 total_samples += batch_size
                 _, cache = self.model.run_with_cache(batch_tokens, names_filter=self.hook_point_filters)
-                hook_point_activation = cache[self.hook_point_filters[0]].to(self.sc.device)
+                hook_point_activation = cache[self.hook_point_filters[0]].to(self.sc.cfg.device)
 
                 if self.sc.cfg.use_patches_only:
                     hook_point_activation = hook_point_activation[:,1:,:]
@@ -147,7 +141,7 @@ class SparsecoderEval():
                 
                 args = [hook_point_activation]
                 if self.is_transcoder:
-                    out_hook_point_activation = cache[self.hook_point_filters[1]].to(self.sc.device)
+                    out_hook_point_activation = cache[self.hook_point_filters[1]].to(self.sc.cfg.device)
                     args.append(out_hook_point_activation)
 
                 sae_out, feature_acts, loss, mse_loss, l1_loss, _, aux_loss = self.sc(*args)
