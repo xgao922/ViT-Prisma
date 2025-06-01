@@ -28,6 +28,15 @@ from vit_prisma.sae.evals.evals import zero_ablate_hook
 from typing import Any, List, Tuple, Dict
 from functools import partial
 
+import logging
+
+
+logging.basicConfig(
+    level=logging.DEBUG,  # or INFO for less verbosity
+    format='%(asctime)s %(levelname)s:%(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
+logger = logging.getLogger(__name__)
 
 class LinearClassifier(nn.Module):
     """A simple linear layer on top of frozen features."""
@@ -61,7 +70,7 @@ def load_pretrained_linear_weights(linear_classifier, model_name, patch_size):
 
 class SparsecoderEval():
 
-    def __init__(self, sc: SparseAutoencoder, model: HookedViT):
+    def __init__(self, sc: SparseAutoencoder, model: HookedViT, dataset: DatasetFolder):
         
         self.sc = sc
         self.model = model
@@ -73,14 +82,10 @@ class SparsecoderEval():
 
         data_transforms = get_model_transforms(self.model.cfg.model_name)
 
-        self.validation_dataset = DatasetFolder(
-            root='/network/scratch/s/sonia.joseph/datasets/kaggle_datasets/ILSVRC/Data/CLS-LOC/val',
-            loader=default_loader,
-            extensions=('.jpg', '.jpeg', '.png'),
-            transform=data_transforms
-        )
+        self.batch_size = 4
 
-        self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=128, shuffle=True, num_workers=4)
+        self.validation_dataset = dataset
+        self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4)
 
         if 'dino' in self.model.cfg.model_name:
             self.is_dino = True
@@ -113,14 +118,26 @@ class SparsecoderEval():
             num_imagenet_classes = 1000
             batch_label_names = [imagenet_index[str(int(label))][1] for label in range(num_imagenet_classes)]
 
-            og_model, _, preproc = open_clip.create_model_and_transforms('hf-hub:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K')
-            tokenizer = open_clip.get_tokenizer('hf-hub:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K')
+            model_name = self.model.cfg.model_name
+            repo_path = model_name.split(':', 1)[1]  # Get everything after the first ':'
+            new_model_id = f'hf-hub:{repo_path}'
+
+            og_model, _, preproc = open_clip.create_model_and_transforms(new_model_id)
+            tokenizer = open_clip.get_tokenizer(new_model_id)
+
+            # download huggingface
 
             text_embeddings = get_text_embeddings_openclip(og_model, preproc, tokenizer, batch_label_names)
+            del og_model, tokenizer
 
         total_acts = None
         total_tokens = 0
         total_images = 0
+
+        count = 0
+
+
+        logger.info("Starting SparseCoder evaluation...")
 
         with torch.no_grad():
             pbar = tqdm(self.validation_dataloader, desc="Evaluating", dynamic_ncols=True)
@@ -133,12 +150,16 @@ class SparsecoderEval():
 
             for _, batch in enumerate(pbar):
                 batch_tokens, gt_labels = batch
-                batch_tokens = batch_tokens.to(self.sc.device)
+                batch_tokens = batch_tokens.to(self.sc.cfg.device)
+                batch_tokens = batch_tokens.half()
                 batch_size = batch_tokens.shape[0]
                 # batch shape
                 total_samples += batch_size
-                _, cache = self.model.run_with_cache(batch_tokens, names_filter=self.hook_point_filters)
-                hook_point_activation = cache[self.hook_point_filters[0]].to(self.sc.device)
+                output, cache = self.model.run_with_cache(batch_tokens, names_filter=self.hook_point_filters)
+                if self.sc.cfg.hook_point_filters == "output":
+                    hook_point_activation = output.unsqueeze(1) # Unsqueeze to give output "patch"" dimension
+                else:
+                    hook_point_activation = cache[self.hook_point_filters[0]].to(self.sc.cfg.device)
 
                 if self.sc.cfg.use_patches_only:
                     hook_point_activation = hook_point_activation[:,1:,:]
@@ -147,13 +168,13 @@ class SparsecoderEval():
                 
                 args = [hook_point_activation]
                 if self.is_transcoder:
-                    out_hook_point_activation = cache[self.hook_point_filters[1]].to(self.sc.device)
+                    out_hook_point_activation = cache[self.hook_point_filters[1]].to(self.sc.cfg.device)
                     args.append(out_hook_point_activation)
 
                 sae_out, feature_acts, loss, mse_loss, l1_loss, _, aux_loss = self.sc(*args)
 
 
-                batch_size, seq_len, _ = feature_acts.shape
+                batch_size, seq_len, *rest = feature_acts.shape
                 total_patches += batch_size * seq_len
 
                 feature_acts_flat = feature_acts.reshape(-1, num_features)
@@ -212,10 +233,15 @@ class SparsecoderEval():
 
                     replacement_hook = standard_replacement_hook if head_index is None else head_replacement_hook
         
-                    recons_image_embeddings = self.classifier_head(model.run_with_hooks(
-                        batch_tokens,
-                        fwd_hooks=[(hook_point, partial(replacement_hook))],
-                    ))
+                    if self.sc.cfg.hook_point_filters == "output":
+                        output = self.model(batch_tokens)
+                        activations = self.sc(output)
+                    else:
+                        activations = self.model.run_with_hooks(
+                            batch_tokens,
+                            fwd_hooks=[(hook_point, partial(replacement_hook))],
+                        )
+                    recons_image_embeddings = self.classifier_head(activations)
 
                     recons_loss = F.cross_entropy(recons_image_embeddings.cuda(), gt_labels.cuda())
 
@@ -238,6 +264,13 @@ class SparsecoderEval():
                     'L0': f"{mean(l0_per_sample)}",
                     'Cosine Sim': f"{cos_sim:.6f}"
                 })
+                
+                count += 1
+                if count > 2000:
+                    break
+        
+        logger.info("Finished running through validation dataset...")
+        logger.info("Computing metrics...")
                 
         feature_activation_counts.to('cpu')
         feature_activation_sums.to('cpu')
