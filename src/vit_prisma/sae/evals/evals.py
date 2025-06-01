@@ -372,17 +372,32 @@ def get_substitution_loss(
 
     replacement_hook = standard_replacement_hook if head_index is None else head_replacement_hook
 
-    recons_image_embeddings = model.run_with_hooks(
-        batch_tokens,
-        fwd_hooks=[(hook_point, partial(replacement_hook))],
-    )
+    # recons_image_embeddings = model.run_with_hooks(
+    #     batch_tokens,
+    #     fwd_hooks=[(hook_point, partial(replacement_hook))],
+    # )
+
+    if sparse_autoencoder.cfg.hook_point_filters == "output":
+        output = model(batch_tokens)
+        recons_image_embeddings, *rest = sparse_autoencoder(output)
+    else:
+        recons_image_embeddings = model.run_with_hooks(
+            batch_tokens,
+            fwd_hooks=[(hook_point, partial(replacement_hook))],
+            )
+
     # recons_softmax_values, _ = get_similarity(recons_image_embeddings, text_embeddings, device=device)
     recons_softmax_values = get_logits(recons_image_embeddings, text_embeddings, device=device)
     recons_loss = F.cross_entropy(recons_softmax_values, gt_labels)
 
-    zero_abl_image_embeddings = model.run_with_hooks(
+    if sparse_autoencoder.cfg.hook_point_filters == "output":
+        # output = model(batch_tokens)
+        zero_abl_image_embeddings = torch.zeros_like(output)
+    else:
+        zero_abl_image_embeddings = model.run_with_hooks(
         batch_tokens, fwd_hooks=[(hook_point, zero_ablate_hook)]
     )
+
     zero_abl_softmax_values = get_logits(zero_abl_image_embeddings, text_embeddings, device=device)
     zero_abl_loss = F.cross_entropy(zero_abl_softmax_values, gt_labels)
 

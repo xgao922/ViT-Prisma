@@ -28,6 +28,15 @@ from vit_prisma.sae.evals.evals import zero_ablate_hook
 from typing import Any, List, Tuple, Dict
 from functools import partial
 
+import logging
+
+
+logging.basicConfig(
+    level=logging.DEBUG,  # or INFO for less verbosity
+    format='%(asctime)s %(levelname)s:%(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
+logger = logging.getLogger(__name__)
 
 class LinearClassifier(nn.Module):
     """A simple linear layer on top of frozen features."""
@@ -109,14 +118,26 @@ class SparsecoderEval():
             num_imagenet_classes = 1000
             batch_label_names = [imagenet_index[str(int(label))][1] for label in range(num_imagenet_classes)]
 
-            og_model, _, preproc = open_clip.create_model_and_transforms(self.model.cfg.model_name)
-            tokenizer = open_clip.get_tokenizer(self.model.cfg.model_name)
+            model_name = self.model.cfg.model_name
+            repo_path = model_name.split(':', 1)[1]  # Get everything after the first ':'
+            new_model_id = f'hf-hub:{repo_path}'
+
+            og_model, _, preproc = open_clip.create_model_and_transforms(new_model_id)
+            tokenizer = open_clip.get_tokenizer(new_model_id)
+
+            # download huggingface
 
             text_embeddings = get_text_embeddings_openclip(og_model, preproc, tokenizer, batch_label_names)
+            del og_model, tokenizer
 
         total_acts = None
         total_tokens = 0
         total_images = 0
+
+        count = 0
+
+
+        logger.info("Starting SparseCoder evaluation...")
 
         with torch.no_grad():
             pbar = tqdm(self.validation_dataloader, desc="Evaluating", dynamic_ncols=True)
@@ -212,10 +233,15 @@ class SparsecoderEval():
 
                     replacement_hook = standard_replacement_hook if head_index is None else head_replacement_hook
         
-                    recons_image_embeddings = self.classifier_head(model.run_with_hooks(
-                        batch_tokens,
-                        fwd_hooks=[(hook_point, partial(replacement_hook))],
-                    ))
+                    if self.sc.cfg.hook_point_filters == "output":
+                        output = self.model(batch_tokens)
+                        activations = self.sc(output)
+                    else:
+                        activations = self.model.run_with_hooks(
+                            batch_tokens,
+                            fwd_hooks=[(hook_point, partial(replacement_hook))],
+                        )
+                    recons_image_embeddings = self.classifier_head(activations)
 
                     recons_loss = F.cross_entropy(recons_image_embeddings.cuda(), gt_labels.cuda())
 
@@ -238,6 +264,13 @@ class SparsecoderEval():
                     'L0': f"{mean(l0_per_sample)}",
                     'Cosine Sim': f"{cos_sim:.6f}"
                 })
+                
+                count += 1
+                if count > 2000:
+                    break
+        
+        logger.info("Finished running through validation dataset...")
+        logger.info("Computing metrics...")
                 
         feature_activation_counts.to('cpu')
         feature_activation_sums.to('cpu')
