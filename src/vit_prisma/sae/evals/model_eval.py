@@ -265,9 +265,7 @@ class SparsecoderEval():
                     'Cosine Sim': f"{cos_sim:.6f}"
                 })
                 
-                count += 1
-                if count > 2000:
-                    break
+    
         
         logger.info("Finished running through validation dataset...")
         logger.info("Computing metrics...")
