@@ -73,8 +73,10 @@ class SparsecoderEval():
 
         data_transforms = get_model_transforms(self.model.cfg.model_name)
 
+        self.batch_size = 4
+
         self.validation_dataset = dataset
-        self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=128, shuffle=True, num_workers=4)
+        self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4)
 
         if 'dino' in self.model.cfg.model_name:
             self.is_dino = True
@@ -107,8 +109,8 @@ class SparsecoderEval():
             num_imagenet_classes = 1000
             batch_label_names = [imagenet_index[str(int(label))][1] for label in range(num_imagenet_classes)]
 
-            og_model, _, preproc = open_clip.create_model_and_transforms('hf-hub:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K')
-            tokenizer = open_clip.get_tokenizer('hf-hub:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K')
+            og_model, _, preproc = open_clip.create_model_and_transforms(self.model.cfg.model_name)
+            tokenizer = open_clip.get_tokenizer(self.model.cfg.model_name)
 
             text_embeddings = get_text_embeddings_openclip(og_model, preproc, tokenizer, batch_label_names)
 
@@ -128,11 +130,15 @@ class SparsecoderEval():
             for _, batch in enumerate(pbar):
                 batch_tokens, gt_labels = batch
                 batch_tokens = batch_tokens.to(self.sc.cfg.device)
+                batch_tokens = batch_tokens.half()
                 batch_size = batch_tokens.shape[0]
                 # batch shape
                 total_samples += batch_size
-                _, cache = self.model.run_with_cache(batch_tokens, names_filter=self.hook_point_filters)
-                hook_point_activation = cache[self.hook_point_filters[0]].to(self.sc.cfg.device)
+                output, cache = self.model.run_with_cache(batch_tokens, names_filter=self.hook_point_filters)
+                if self.sc.cfg.hook_point_filters == "output":
+                    hook_point_activation = output.unsqueeze(1) # Unsqueeze to give output "patch"" dimension
+                else:
+                    hook_point_activation = cache[self.hook_point_filters[0]].to(self.sc.cfg.device)
 
                 if self.sc.cfg.use_patches_only:
                     hook_point_activation = hook_point_activation[:,1:,:]
@@ -147,7 +153,7 @@ class SparsecoderEval():
                 sae_out, feature_acts, loss, mse_loss, l1_loss, _, aux_loss = self.sc(*args)
 
 
-                batch_size, seq_len, _ = feature_acts.shape
+                batch_size, seq_len, *rest = feature_acts.shape
                 total_patches += batch_size * seq_len
 
                 feature_acts_flat = feature_acts.reshape(-1, num_features)
