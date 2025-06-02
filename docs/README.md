@@ -17,9 +17,10 @@ We also include a suite of [open source SAEs for all layers of CLIP and DINO](ht
 - [Models Supported](#Models-Supported)
 - [Vision SAE Demo Notebooks](#SAE-Demo-Notebooks)
 - [Vision SAE Pretrained Weights](#Suite-of-Pretrained-Vision-SAE-Weights)
-  - CLIP
-  - DINO
+  - [CLIP Vanilla SAEs (All Patches)](#clip-vanilla-saes-all-patches)
+  - [DINO](#dino-vanilla-all-patches)
   - CLIP transcoders
+  - For more, see [the full table](/docs/sae_table)
 - [Basic Mechanistic Interpretability](#Basic-Mechanistic-Interpretability)
 - [Contributors](#Contributors)
 - [Citation](#Citation)
@@ -76,7 +77,7 @@ sae = SparseAutoencoder.load_from_pretrained(sae_path) # This now automatically 
 
 We recommend starting with the vanilla CLIP SAEs, which are the highest quality. If you are just getting started with steering CLIP's output, we recommend using the [Layer 11 resid-post SAE](https://huggingface.co/prisma-multimodal/sparse-autoencoder-clip-b-32-sae-vanilla-x64-layer-11-hook_resid_post-l1-1e-05).
 
-### Vanilla SAEs (All Patches)
+### CLIP Vanilla SAEs (All Patches)
 
 | Model | Layer | Sublayer   | l1 coeff. | % Explained var. | Avg L0  | Avg CLS L0 | Cos sim | Recon cos sim | CE    | Recon CE | Zero abl CE | % CE recovered | % Alive features |
 |--------|-------|------------|-----------|------------------|---------|-------------|---------|----------------|--------|-----------|--------------|----------------|------------------|
