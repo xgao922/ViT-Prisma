@@ -20,7 +20,7 @@ We also include a suite of [open source SAEs for all layers of CLIP and DINO](ht
   - [CLIP Vanilla SAEs (All Patches)](#clip-vanilla-saes-all-patches)
   - [DINO](#dino-vanilla-all-patches)
   - CLIP transcoders
-  - For more, see [the full table](/docs/sae_table)
+  - For more, see [the full table](/docs/sae_table.md)
 - [Basic Mechanistic Interpretability](#Basic-Mechanistic-Interpretability)
 - [Contributors](#Contributors)
 - [Citation](#Citation)
