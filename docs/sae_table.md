@@ -85,7 +85,7 @@ For more details, see our whitepaper.
 | [link](https://huggingface.co/Prisma-Multimodal/imagenet-sweep-vanilla-x64-Spatial_max_9-hook_resid_post-854.891540527344-99)  | 9     | resid_post | 9e-8      | 99               | 854.92   | 0.99    | 1.00           | 6.7622 | 6.7622    | 6.9083       | 99.9991        | 85.43            |
 | [link](https://huggingface.co/Prisma-Multimodal/imagenet-sweep-vanilla-x64-Spatial_max_11-hook_resid_post-829.0498046875-99)   | 11    | resid_post | 3e-7      | 99               | 829.09   | 0.99    | 1.00           | 6.7622 | 6.7622    | 6.9086       | 100.00         | 55.71            |
 
-### Top K Transcoders (All Patches)
+## Top K Transcoders (All Patches)
 
 *CLIP Top-K transcoder performance metrics for all patches.*
 
