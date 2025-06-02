@@ -377,7 +377,7 @@ def get_substitution_loss(
     #     fwd_hooks=[(hook_point, partial(replacement_hook))],
     # )
 
-    if sparse_autoencoder.cfg.hook_point_filters == "output":
+    if getattr(sparse_autoencoder.cfg, "hook_point_filters", None) == "output":
         output = model(batch_tokens)
         recons_image_embeddings, *rest = sparse_autoencoder(output)
     else:
@@ -390,8 +390,9 @@ def get_substitution_loss(
     recons_softmax_values = get_logits(recons_image_embeddings, text_embeddings, device=device)
     recons_loss = F.cross_entropy(recons_softmax_values, gt_labels)
 
-    if sparse_autoencoder.cfg.hook_point_filters == "output":
-        # output = model(batch_tokens)
+
+    if getattr(sparse_autoencoder.cfg, "hook_point_filters", None) == "output":
+                # output = model(batch_tokens)
         zero_abl_image_embeddings = torch.zeros_like(output)
     else:
         zero_abl_image_embeddings = model.run_with_hooks(
