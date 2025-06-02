@@ -4,7 +4,7 @@
 
 
 # Prisma: An Open Source Toolkit for Mechanistic Interpretability in Vision and Video
-This repo contains code for vision and video mechanistic interpretability, including activation caching and SAE training. We support a variety of vision/video models from Huggingface and OpenCLIP.
+Prisma contains code for vision and video mechanistic interpretability, including activation caching and SAE training. We support a variety of vision/video models from Huggingface and OpenCLIP. This library was originally made by [Sonia Joseph](https://github.com/soniajoseph) (see a full list of contributors [here](#Contributors)).
 
 Mechanistic interpretability is broadly split into two parts: circuit-analysis and sparse autoencoders (SAEs). Circuit-analysis finds the causal links between internal components of the model and primarily relies on activation caching. SAEs are like a more fine-grained "primitive" that you can use to examine intermediate activations. Prisma has the infrastructure to do both.
 
@@ -211,7 +211,7 @@ Accuracy `[ <Acc> | <Top5 Acc> ]`
 
 
 # Contributors
-Thank you to all our fantastic contributors! [Praneet Suresh](https://github.com/PraneetNeuro), [Yash Vadi](https://github.com/YashVadi), [Rob Graham](https://github.com/themachinefan), [Lorenz Hufe](https://github.com/lowlorenz), [Edward Stevinson](https://github.com/stevinson), and [Ethan Goldfarb](https://github.com/ekg15), _and more coming soon_. You learn more about our contributions on our [Contributors page](https://github.com/soniajoseph/ViT-Prisma/blob/main/docs/PRISMA_CONTRIBUTORS.md) (coming soon).
+This library was originally founded by [Sonia Joseph](https://github.com/soniajoseph), alongside fantastic contributors: [Praneet Suresh](https://github.com/PraneetNeuro), [Yash Vadi](https://github.com/YashVadi), [Rob Graham](https://github.com/themachinefan), [Lorenz Hufe](https://github.com/lowlorenz), [Edward Stevinson](https://github.com/stevinson), and [Ethan Goldfarb](https://github.com/ekg15), _and more coming soon_. You learn more about our contributions on our [Contributors page](https://github.com/soniajoseph/ViT-Prisma/blob/main/docs/PRISMA_CONTRIBUTORS.md) (coming soon).
 
 Thank you to Leo Gao, Joseph Bloom, Lee Sharkey, and Neel Nanda for the feedback and discussions at the beginning of this repo's development.
 
