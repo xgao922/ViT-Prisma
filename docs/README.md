@@ -19,7 +19,7 @@ We also include a suite of [open source SAEs for all layers of CLIP and DINO](ht
 - [Vision SAE Pretrained Weights](#Suite-of-Pretrained-Vision-SAE-Weights)
   - [CLIP Vanilla SAEs (All Patches)](#clip-vanilla-saes-all-patches)
   - [DINO](#dino-vanilla-all-patches)
-  - CLIP transcoders
+  - [CLIP transcoders](#clip-transcoders)
   - For more, see [the full table](/docs/sae_table.md)
 - [Basic Mechanistic Interpretability](#Basic-Mechanistic-Interpretability)
 - [Contributors](#Contributors)
@@ -124,9 +124,24 @@ We recommend starting with the vanilla CLIP SAEs, which are the highest quality.
 | [link](https://huggingface.co/Prisma-Multimodal/DINO-vanilla-x64-all_patches_11-resid_post-1085-99) | 11 | resid_post | 1085 | 99 | 1084 | 0.99673 | 1.885370 | 1.911608 | 6.9078 | 99.48 |
 
 ## CLIP Transcoders
+*CLIP Top-K transcoder performance metrics for all patches.*
+
+| Model                                                                 | Layer | Block | % Explained var. | k    | Avg CLS L0 | Cos sim | CE     | Recon CE | Zero abl CE | % CE recovered |
+|-----------------------------------------------------------------------|-------|-------|------------------|------|------------|---------|--------|----------|-------------|----------------|
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-768-x64-all_patches_0-mlp-96)  | 0     | MLP   | 96               | 768  | 767        | 0.9655  | 6.7621 | 6.7684   | 6.8804      | 94.68          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-256-x64-all_patches_1-mlp-94)  | 1     | MLP   | 94               | 256  | 255        | 0.9406  | 6.7621 | 6.7767   | 6.8816      | 87.78          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-1024-x64-all_patches_2-mlp-93) | 2     | MLP   | 93               | 1024 | 475        | 0.9758  | 6.7621 | 6.7681   | 6.7993      | 83.92          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-1024-x64-all_patches_3-mlp-90) | 3     | MLP   | 90               | 1024 | 825        | 0.9805  | 6.7621 | 6.7642   | 6.7999      | 94.42          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-512-x64-all_patches_4-mlp-76)  | 4     | MLP   | 76               | 512  | 29         | 0.9830  | 6.7621 | 6.7636   | 6.8080      | 96.76          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-1024-x64-all_patches_5-mlp-91) | 5     | MLP   | 91               | 1024 | 1017       | 0.9784  | 6.7621 | 6.7643   | 6.8296      | 96.82          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-1024-x64-all_patches_6-mlp-94) | 6     | MLP   | 94               | 1024 | 924        | 0.9756  | 6.7621 | 6.7630   | 6.8201      | 98.40          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-1024-x64-all_patches_7-mlp-97) | 7     | MLP   | 97               | 1024 | 1010       | 0.9629  | 6.7621 | 6.7631   | 6.8056      | 97.68          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-1024-x64-all_patches_8-mlp-98) | 8     | MLP   | 98               | 1024 | 1023       | 0.9460  | 6.7621 | 6.7630   | 6.8017      | 97.70          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-1024-x64-all_patches_9-mlp-98) | 9     | MLP   | 98               | 1024 | 1023       | 0.9221  | 6.7621 | 6.7630   | 6.7875      | 96.50          |
+| [link](https://huggingface.co/Prisma-Multimodal/CLIP-transcoder-topk-1024-x64-all_patches_10-mlp-97)| 10    | MLP   | 97               | 1024 | 1019       | 0.9334  | 6.7621 | 6.7636   | 6.7860      | 93.95          |
 
 
-More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475). We've also visualized some Prisma SAEs [here](https://semanticlens.hhi-research-insights.de/umap-view).
+More details are in our whitepaper [here](https://arxiv.org/abs/2504.19475). For more SAEs, including CLS-only and spatial patch-only variants, see the [SAE table](/docs/sae_table.md). We've also visualized some Prisma SAEs [here](https://semanticlens.hhi-research-insights.de/umap-view).
 
 # Basic Mechanistic Interpretability
 An earlier version of Prisma included features for basic mechanistic interpretability, including the logit lens and attention head visualizations. In addition to the tutorial notebooks below, you can also check out this [corresponding talk](https://youtu.be/gQbh-RZtsq4?t=0) on some of these techniques.
