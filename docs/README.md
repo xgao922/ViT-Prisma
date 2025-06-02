@@ -213,7 +213,7 @@ Accuracy `[ <Acc> | <Top5 Acc> ]`
 # Contributors
 This library was originally founded by [Sonia Joseph](https://github.com/soniajoseph), alongside fantastic contributors: [Praneet Suresh](https://github.com/PraneetNeuro), [Yash Vadi](https://github.com/YashVadi), [Rob Graham](https://github.com/themachinefan), [Lorenz Hufe](https://github.com/lowlorenz), [Edward Stevinson](https://github.com/stevinson), and [Ethan Goldfarb](https://github.com/ekg15), _and more coming soon_. You learn more about our contributions on our [Contributors page](https://github.com/soniajoseph/ViT-Prisma/blob/main/docs/PRISMA_CONTRIBUTORS.md) (coming soon). Also, check out [our whitepaper](https://arxiv.org/abs/2504.19475).
 
-Thank you to Leo Gao, Joseph Bloom, Lee Sharkey, and Neel Nanda for the feedback and discussions at the beginning of this repo's development.
+Thank you to Leo Gao, Joseph Bloom, Lee Sharkey, Neel Nanda, and Yossi Gandelsman for the feedback and discussions at the beginning of this repo's development.
 
 We welcome new contributors. Check out our contributing guidelines [here](CONTRIBUTING.md) and our [open Issues](https://github.com/soniajoseph/ViT-Prisma/issues).
 
