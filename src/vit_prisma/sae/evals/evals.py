@@ -375,7 +375,7 @@ def get_substitution_loss(
     # recons_image_embeddings = model.run_with_hooks(
     #     batch_tokens,
     #     fwd_hooks=[(hook_point, partial(replacement_hook))],
-    # )
+    # ) 
 
     if getattr(sparse_autoencoder.cfg, "hook_point_filters", None) == "output":
         output = model(batch_tokens)

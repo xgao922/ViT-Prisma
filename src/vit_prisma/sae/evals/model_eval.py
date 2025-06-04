@@ -252,13 +252,13 @@ class SparsecoderEval():
             
                         if getattr(self.sc.cfg, "hook_point_filters", None) == "output":
                             output = self.model(batch_tokens)
-                            activations = self.sc(output)
+                            recons_image_embeddings = self.sc(output)
                         else:
                             activations = self.model.run_with_hooks(
                                 batch_tokens,
                                 fwd_hooks=[(hook_point, partial(replacement_hook))],
                             )
-                        recons_image_embeddings = self.classifier_head(activations)
+                            recons_image_embeddings = self.classifier_head(activations)
 
                         recons_loss = F.cross_entropy(recons_image_embeddings.cuda(), gt_labels.cuda())
 
@@ -289,7 +289,6 @@ class SparsecoderEval():
                         break
 
                     
-    
         
         logger.info("Finished running through validation dataset...")
         logger.info("Computing metrics...")
