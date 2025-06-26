@@ -92,9 +92,9 @@ class HookPoint(nn.Module):
         
         if dir == "fwd" or dir == "both":
             self.fwd_hooks = _remove_hooks(self.fwd_hooks)
-        elif dir == "bwd" or dir == "both":
+        if dir == "bwd" or dir == "both":
             self.bwd_hooks = _remove_hooks(self.bwd_hooks)
-        else:
+        if dir not in ["fwd", "bwd", "both"]:
             raise ValueError(f"Invalid direction {dir}. dir must be 'fwd', 'bwd', or 'both'")
 
     def clear_context(self):
