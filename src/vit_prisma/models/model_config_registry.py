@@ -4,8 +4,8 @@ Comprehensive Prisma Model Configurations
 Configs load directly from Huggingface/OpenCLIP, sometimes with overrides to be compatible with Prisma.
 """
 
-from typing import Dict, Any
 from enum import Enum
+from typing import Any, Dict
 
 from vit_prisma.utils.enums import ModelType
 
@@ -616,11 +616,27 @@ BASE_TEXT_CONFIG = {
     "layer_norm_pre": True,
 }
 
+BASE_TEXT_CONFIG_B = {
+    "d_model": 512,
+    "n_heads": 8,
+    "n_layers": 12,
+    "d_mlp": 2048,
+    "d_head": 64,
+    "vocab_size": 49408,
+    "context_length": 77,
+    "eps": 1e-5,
+    "normalization_type": "LN",
+    "layer_norm_pre": True,
+}
+
 # Text configurations for CLIP models
 OPEN_CLIP_TEXT_CONFIGS = {
     # Base models
     "open-clip:laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K": {
-        **BASE_TEXT_CONFIG,
+        **BASE_TEXT_CONFIG_B,
+    },
+    "open-clip:laion/CLIP-ViT-B-32-laion2B-s34B-b79K": {
+        **BASE_TEXT_CONFIG_B,
     },
     "open-clip:laion/CLIP-ViT-L-14-DataComp.XL-s13B-b90K": {
         **BASE_TEXT_CONFIG,
