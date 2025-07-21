@@ -7,39 +7,40 @@ to make them compatible with the Prisma library.
 
 """
 
-import logging
-from typing import Dict, Any, Callable, Optional, Union, Tuple, Type, List
-import torch
 import functools
+import logging
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-from vit_prisma.configs.HookedViTConfig import HookedViTConfig
-from vit_prisma.configs.HookedTextTransformerConfig import HookedTextTransformerConfig
-from vit_prisma.utils.enums import ModelType
+import torch
 
 import torch.nn as nn
+from vit_prisma.configs.HookedTextTransformerConfig import HookedTextTransformerConfig
+
+from vit_prisma.configs.HookedViTConfig import HookedViTConfig
 
 # Import configuration dictionaries - these are just static data
 from vit_prisma.models.model_config_registry import (
-    ModelCategory,
     MODEL_CATEGORIES,
     MODEL_CONFIGS,
+    ModelCategory,
     TEXT_SUPPORTED_MODELS,
 )
 
 # Import conversion functions for reference only - will be loaded on demand
 from vit_prisma.models.weight_conversion import (
-    convert_timm_weights,
     convert_clip_weights,
-    convert_open_clip_weights,
-    convert_open_clip_text_weights,
     convert_dino_weights,
+    convert_kandinsky_clip_weights,
+    convert_open_clip_text_weights,
+    convert_open_clip_weights,
+    convert_timm_weights,
     convert_vivet_weights,
     convert_vjepa_weights,
-    convert_kandinsky_clip_weights,
-    remove_open_clip_prefix,
     download_pretrained_from_hf,
     load_state_dict,
+    remove_open_clip_prefix,
 )
+from vit_prisma.utils.enums import ModelType
 
 # Type alias
 ConfigType = Union[HookedViTConfig, HookedTextTransformerConfig]
@@ -162,7 +163,10 @@ FAILING_MODELS = {
 
 
 def load_config(
-    model_name: str, model_type: ModelType = ModelType.VISION, **kwargs
+    model_name: str,
+    model_type: ModelType = ModelType.VISION,
+    local_path: Optional[str] = None,
+    **kwargs,
 ) -> ConfigType:
     """
     Load and create configuration for a model.
@@ -170,6 +174,7 @@ def load_config(
     Args:
         model_name: Name of the model to load
         model_type: Type of model (VISION or TEXT)
+        local_path: Path to local model directory (for OpenCLIP models)
         **kwargs: Additional arguments
 
     Returns:
@@ -188,7 +193,9 @@ def load_config(
         old_config = _get_timm_hf_config(model_name)
         new_config = _create_config_from_hf(old_config, model_name, model_type)
     elif category == ModelCategory.OPEN_CLIP:
-        old_config = _get_open_clip_config(model_name, model_type)
+        old_config = _get_open_clip_config(
+            model_name, model_type, local_path=local_path
+        )
         new_config = _create_config_from_open_clip(old_config, model_name, model_type)
     elif category == ModelCategory.DINO:
         old_config = _get_general_hf_config(model_name, model_type=None)
@@ -289,6 +296,7 @@ def load_hooked_model(
     move_to_device: bool = True,
     use_attn_result: bool = False,
     allow_failing: bool = False,
+    local_path: Optional[str] = None,
     **kwargs,
 ) -> Any:
     """
@@ -304,6 +312,7 @@ def load_hooked_model(
         fold_ln: Whether to fold layer normalization into attention
         center_writing_weights: Whether to center writing weights
         allow_failing: Whether to allow loading models that are known to fail tests
+        local_path: Path to local model weights (for OpenCLIP models)
         **kwargs: Additional arguments
 
     Returns:
@@ -331,7 +340,7 @@ def load_hooked_model(
 
     model_name = check_model_name(model_name, allow_failing)
 
-    config = load_config(model_name, model_type, **kwargs)
+    config = load_config(model_name, model_type, local_path, **kwargs)
 
     if model_class is None:
         if model_type == ModelType.VISION:
@@ -348,6 +357,9 @@ def load_hooked_model(
 
     # Load weights if requested
     if pretrained:
+        # Make sure local_path is included in kwargs for weight loading
+        if local_path is not None:
+            kwargs["local_path"] = local_path
         state_dict = load_weights(model, model_name, model_type, dtype, **kwargs)
 
     model.load_and_process_state_dict(
@@ -394,13 +406,33 @@ def _get_timm_hf_config(model_name: str):
     return hf_config
 
 
-def _get_open_clip_config(model_name: str, model_type: ModelType):
-    import open_clip
+def _get_open_clip_config(model_name: str, model_type: ModelType, local_path=None):
     import json
+    import os
 
-    config_path = download_pretrained_from_hf(
-        remove_open_clip_prefix(model_name), filename="open_clip_config.json"
-    )
+    import open_clip
+
+    if local_path is not None:
+        # Look for config file in the local directory
+        if os.path.isdir(local_path):
+            config_path = os.path.join(local_path, "open_clip_config.json")
+        else:
+            # Assume local_path is the directory containing the model files
+            config_path = os.path.join(
+                os.path.dirname(local_path), "open_clip_config.json"
+            )
+
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(
+                f"Config file not found at {config_path}. "
+                f"Please ensure 'open_clip_config.json' is in the same directory as your model weights."
+            )
+    else:
+        # Download from HuggingFace
+        config_path = download_pretrained_from_hf(
+            remove_open_clip_prefix(model_name), filename="open_clip_config.json"
+        )
+
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
         model_config = config["model_cfg"]
@@ -827,9 +859,10 @@ def _load_vivit_weights(model_name, dtype, **kwargs):
 def _load_vjepa_weights(model_name, **kwargs):
     """Load weights from a VJEPA model."""
     try:
-        from vit_prisma.vjepa_hf.modeling_vjepa import VJEPAModel
-        import yaml
         from importlib import resources
+
+        import yaml
+        from vit_prisma.vjepa_hf.modeling_vjepa import VJEPAModel
     except ImportError:
         raise ImportError(
             "VJEPA modules not found. Make sure vit_prisma.vjepa_hf is available."
