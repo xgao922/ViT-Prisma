@@ -15,6 +15,7 @@ from vit_prisma.models.layers.position_embedding import PosEmbedding
 from vit_prisma.models.layers.transformer_block import TransformerBlock
 from vit_prisma.prisma_tools import HookPoint
 from vit_prisma.prisma_tools.activation_cache import ActivationCache
+from vit_prisma.utils import devices
 
 
 def _expand_token(token, batch_size: int):
@@ -128,7 +129,9 @@ class HookedTextTransformer(HookedTransformer):
 
         if self.cls_emb:
             seq_len += 1
-            token_embed = torch.cat([token_embed, _expand_token(self.cls_emb, token_embed.shape[0])], dim=1)
+            token_embed = torch.cat(
+                [token_embed, _expand_token(self.cls_emb, token_embed.shape[0])], dim=1
+            )
             cls_mask = self.build_cls_mask(input, self.cfg.dtype)
             if attn_mask is not None:
                 attn_mask = (
@@ -221,3 +224,18 @@ class HookedTextTransformer(HookedTransformer):
                     nn.init.kaiming_normal_(m.weight, nonlinearity="relu")
                     if m.bias is not None:
                         nn.init.constant_(m.bias, 0)
+
+    def move_model_modules_to_device(self):
+        device = self.cfg.device
+        # self.token_embed.proj.to(device)
+        self.token_embed.to(devices.get_device_for_block_index(0, self.cfg))
+        self.hook_embed.to(devices.get_device_for_block_index(0, self.cfg))
+        if self.cfg.positional_embedding_type != "rotary":
+            self.pos_embed.to(devices.get_device_for_block_index(0, self.cfg))
+            self.hook_pos_embed.to(devices.get_device_for_block_index(0, self.cfg))
+        if hasattr(self, "ln_final"):
+            self.ln_final.to(
+                devices.get_device_for_block_index(self.cfg.n_layers - 1, self.cfg)
+            )
+        for i, block in enumerate(self.blocks):
+            block.to(devices.get_device_for_block_index(i, self.cfg))
