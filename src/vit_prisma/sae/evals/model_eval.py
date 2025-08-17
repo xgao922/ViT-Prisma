@@ -227,6 +227,9 @@ class SparsecoderEval():
                                                                                         dim=0).mean(-1).tolist()
                     all_cosine_similarity.append(cos_sim)
 
+                    if isinstance(gt_labels, list):
+                        gt_labels = torch.tensor(gt_labels, dtype=torch.long, device=text_embeddings.device)
+
                     if is_clip:
                         score, loss, recons_loss, zero_abl_loss = get_substitution_loss(self.sc, self.model, batch_tokens, gt_labels, 
                                                                                 text_embeddings)

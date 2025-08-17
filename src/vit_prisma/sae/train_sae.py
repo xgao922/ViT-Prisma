@@ -11,7 +11,7 @@ from vit_prisma.sae.training.geometric_median import compute_geometric_median
 from vit_prisma.sae.training.get_scheduler import get_scheduler
 
 # from vit_prisma.sae.evals import run_evals_vision
-# from vit_prisma.sae.evals.evals import get_substitution_loss, get_text_embeddings, get_text_embeddings_openclip, get_text_labels
+from vit_prisma.sae.evals.evals import get_substitution_loss, get_text_embeddings, get_text_embeddings_openclip, get_text_labels
 
 from vit_prisma.dataloaders.imagenet_index import imagenet_index
 
@@ -40,6 +40,9 @@ import uuid
 import wandb
 
 
+# from sae_lens.training.activations_store import ActivationsStore
+# from sae_lens.config import HfDataset
+
 def wandb_log_suffix(cfg: Any, hyperparams: Any):
     # Create a mapping from cfg list keys to their corresponding hyperparams attributes
     key_mapping = {
@@ -59,6 +62,7 @@ def wandb_log_suffix(cfg: Any, hyperparams: Any):
 
 
 class VisionSAETrainer:
+
     def __init__(self, cfg: VisionModelSAERunnerConfig, model, dataset, eval_dataset=None):
         self.cfg = cfg
         self.is_transcoder = self.cfg.is_transcoder
@@ -85,6 +89,11 @@ class VisionSAETrainer:
         self.activations_store = self.initialize_activations_store(
             dataset, eval_dataset
         )
+        # self.text_activations_store = ActivationsStore.from_config(
+        #     self.model,
+        #     self.cfg,
+        #     override_dataset=override_dataset,
+        # )
         if not self.cfg.wandb_project:
             self.cfg.wandb_project = (
                 self.cfg.model_name.replace("/", "-")
@@ -409,6 +418,7 @@ class VisionSAETrainer:
             n_forward_passes_since_fired,
             n_frac_active_tokens,
         )
+
 
     # layer_acts be a poor format - need to run in ctx_len, gt_labels format
     @torch.no_grad()
@@ -790,7 +800,7 @@ class VisionSAETrainer:
 
         pbar = tqdm(total=self.cfg.total_training_tokens, desc=f"Training {arch}", mininterval=20)
         while n_training_tokens < self.cfg.total_training_tokens:
-            layer_acts = self.activations_store.next_batch()
+            layer_acts = self.activations_store.next_batch() # activations of image batch
 
             # init these here to avoid uninitialized vars
             mse_loss = torch.tensor(0.0)

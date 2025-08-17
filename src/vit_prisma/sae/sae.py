@@ -810,6 +810,15 @@ class TopK(nn.Module):
         return result
 
 
+class JumpReLU(nn.Module):
+    def __init__(self, jump: float = 0.5):
+        super().__init__()
+        self.jump = jump
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.where(x >= 0, x + self.jump, torch.zeros_like(x))
+
+
 def get_activation_fn(
     activation_fn: str, **kwargs: Any
 ) -> Callable[[torch.Tensor], torch.Tensor]:
@@ -820,6 +829,9 @@ def get_activation_fn(
 
     if activation_fn == "relu":
         return torch.nn.ReLU()
+    elif activation_fn == "jump-relu":
+        jump = kwargs.get("jump", 0.002)
+        return JumpReLU(jump)
     elif activation_fn == "tanh-relu":
 
         def tanh_relu(input: torch.Tensor) -> torch.Tensor:
